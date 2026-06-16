@@ -13,3 +13,5 @@ export * from './geo';
 export * from './categories';
 export * from './http';
 export * from './providers';
+export * from './ranking';
+export * from './nearby';
