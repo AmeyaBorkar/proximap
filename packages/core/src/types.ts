@@ -77,6 +77,10 @@ export interface Poi {
   /** Original source tags/attributes (e.g. OSM tags). */
   tags: Record<string, string>;
   source: string;
+  /** Share of expected tags present for this category, in [0, 1]. */
+  completeness?: number;
+  /** Best-effort last-verified date (YYYY-MM-DD) from check_date/survey/meta. */
+  lastVerified?: string;
 }
 
 /** A {@link Poi} enriched with distance from the search origin and a rank. */

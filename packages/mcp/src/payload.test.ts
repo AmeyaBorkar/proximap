@@ -32,6 +32,8 @@ describe('toNearbyPayload', () => {
       kind: 'cafe',
       distanceMeters: 121,
       osmId: 'node/1',
+      completeness: null,
+      lastVerified: null,
     });
   });
 });

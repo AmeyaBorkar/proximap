@@ -21,6 +21,8 @@ export function toNearbyPayload(result: NearbyResult) {
       lat: poi.location.lat,
       lng: poi.location.lng,
       osmId: poi.id,
+      completeness: poi.completeness ?? null,
+      lastVerified: poi.lastVerified ?? null,
     })),
   };
 }

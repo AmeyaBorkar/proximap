@@ -1,5 +1,6 @@
 import { categorize } from '../categories';
 import { DEFAULT_USER_AGENT, requestJson } from '../http';
+import { completenessOf, dedupePois, lastVerifiedOf } from '../quality';
 import { selectorToOverpassFilter } from '../taxonomy';
 import type { CategorySelector, LatLng, NearbyOptions, PlacesProvider, Poi } from '../types';
 
@@ -19,6 +20,8 @@ interface OverpassElement {
   lon?: number;
   center?: { lat: number; lon: number };
   tags?: Record<string, string>;
+  /** Last-edit time, present when the query requests `meta`. */
+  timestamp?: string;
 }
 
 interface OverpassResponse {
@@ -43,7 +46,7 @@ const SELECTORS = [
 export function buildOverpassQuery(center: LatLng, radiusMeters: number): string {
   const around = `around:${Math.max(1, Math.round(radiusMeters))},${center.lat},${center.lng}`;
   const body = SELECTORS.map((selector) => `  ${selector}(${around});`).join('\n');
-  return `[out:json][timeout:25];\n(\n${body}\n);\nout center tags;`;
+  return `[out:json][timeout:25];\n(\n${body}\n);\nout center tags meta;`;
 }
 
 /** Build an Overpass query that fetches only features matching `selectors`. */
@@ -56,7 +59,7 @@ export function buildTargetedOverpassQuery(
   const body = selectors
     .map((selector) => `  nwr${selectorToOverpassFilter(selector)}(${around});`)
     .join('\n');
-  return `[out:json][timeout:25];\n(\n${body}\n);\nout center tags;`;
+  return `[out:json][timeout:25];\n(\n${body}\n);\nout center tags meta;`;
 }
 
 function coordOf(lat: number | undefined, lon: number | undefined): LatLng | null {
@@ -112,7 +115,7 @@ export class OverpassPlacesProvider implements PlacesProvider {
       if (wanted && !wanted.has(poi.category)) continue;
       pois.push(poi);
     }
-    return pois;
+    return dedupePois(pois);
   }
 
   private toPoi(element: OverpassElement): Poi | null {
@@ -136,6 +139,9 @@ export class OverpassPlacesProvider implements PlacesProvider {
     };
     if (tags.name) poi.name = tags.name;
     if (kind) poi.kind = kind;
+    poi.completeness = completenessOf(category, tags);
+    const lastVerified = lastVerifiedOf(tags, element.timestamp);
+    if (lastVerified) poi.lastVerified = lastVerified;
     return poi;
   }
 }

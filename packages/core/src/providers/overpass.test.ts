@@ -36,7 +36,7 @@ describe('buildOverpassQuery', () => {
     const query = buildOverpassQuery({ lat: 1.5, lng: -2.5 }, 750);
     expect(query).toContain('around:750,1.5,-2.5');
     expect(query).toContain('nwr["amenity"]');
-    expect(query).toContain('out center tags;');
+    expect(query).toContain('out center tags meta;');
   });
 });
 
@@ -62,6 +62,34 @@ describe('OverpassPlacesProvider', () => {
     );
     expect(pois).toHaveLength(1);
     expect(pois[0]!.category).toBe('grocery');
+  });
+
+  it('deduplicates a node and way for one feature and sets quality signals', async () => {
+    stubFetch({
+      elements: [
+        {
+          type: 'node',
+          id: 10,
+          lat: 48.8585,
+          lon: 2.295,
+          tags: { amenity: 'cafe', name: 'Twin', cuisine: 'coffee_shop', opening_hours: '24/7' },
+          timestamp: '2025-02-01T10:00:00Z',
+        },
+        {
+          type: 'way',
+          id: 11,
+          center: { lat: 48.85851, lon: 2.29501 },
+          tags: { amenity: 'cafe', name: 'Twin', check_date: '2025-05-05' },
+        },
+      ],
+    });
+    const pois = await new OverpassPlacesProvider().findNearby(
+      { lat: 48.8584, lng: 2.2945 },
+      { radiusMeters: 500 },
+    );
+    expect(pois).toHaveLength(1);
+    expect(pois[0]!.completeness).toBeGreaterThan(0);
+    expect(pois[0]!.lastVerified).toBeDefined();
   });
 
   it('POSTs the encoded query in the request body', async () => {
