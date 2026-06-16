@@ -3,6 +3,9 @@ import {
   detectGaps,
   findNearbyAmenities,
   NominatimGeocoder,
+  ODBL_ATTRIBUTION,
+  toCSV,
+  toGeoJSON,
   walkabilityScore,
   type CategoryWeight,
   type FacetFilters,
@@ -23,6 +26,7 @@ interface NearOptions {
   limit: string;
   lang?: string;
   json?: boolean;
+  format?: string;
 }
 
 interface GeocodeCommandOptions {
@@ -135,6 +139,17 @@ async function runNear(query: string, options: NearOptions): Promise<void> {
     ...(options.lang ? { language: options.lang } : {}),
   });
 
+  if (options.format) {
+    const format = options.format.toLowerCase();
+    if (format === 'geojson')
+      process.stdout.write(`${JSON.stringify(toGeoJSON(result), null, 2)}\n`);
+    else if (format === 'csv') process.stdout.write(`${toCSV(result)}\n`);
+    else throw new Error(`unknown --format "${options.format}" (use geojson or csv)`);
+    // Keep the ODbL notice off stdout so the data stays pipeable to a file.
+    process.stderr.write(`${ODBL_ATTRIBUTION}\n`);
+    return;
+  }
+
   const output = options.json ? JSON.stringify(result, null, 2) : renderNearby(result);
   process.stdout.write(`${output}\n`);
 }
@@ -243,6 +258,7 @@ program
   .option('-n, --limit <count>', 'maximum number of results', '20')
   .option('--lang <code>', 'preferred language for place names (e.g. en)')
   .option('--json', 'output raw JSON instead of a list')
+  .option('--format <type>', 'export results as geojson or csv (ODbL notice on stderr)')
   .action((parts: string[], options: NearOptions) => runNear(parts.join(' '), options));
 
 program

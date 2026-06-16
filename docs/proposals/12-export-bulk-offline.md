@@ -1,6 +1,6 @@
 # 12 — Export, bulk scoring & offline datasets
 
-- **Status:** Proposed · **Tier:** P2 · **Novelty:** Differentiated · **Complexity:** Med
+- **Status:** Partially implemented (v1: GeoJSON/CSV export with ODbL notice. Bulk/batch, snapshots, offline dataset provider, and Parquet are follow-ups) · **Tier:** P2 · **Novelty:** Differentiated · **Complexity:** Med
 
 ## Problem
 

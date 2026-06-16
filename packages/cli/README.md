@@ -44,6 +44,10 @@ proximap score "Brandenburg Gate, Berlin"
 
 # Compare places to live by access to what you care about
 proximap compare "Prenzlauer Berg, Berlin" "Marzahn, Berlin" --weights grocery=3,transport=2,park=2
+
+# Export results for GIS / spreadsheets (OSM data is yours to store under ODbL)
+proximap near "Eiffel Tower, Paris" -c food --format geojson > food.geojson
+proximap near "Eiffel Tower, Paris" -c food --format csv > food.csv
 ```
 
 Run `proximap --help` or `proximap <command> --help` for all options.

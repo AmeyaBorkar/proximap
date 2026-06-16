@@ -49,8 +49,9 @@ commodities like routing/isochrones. Full designs live in
       — **most novel**: one POI per category, shortest trip (Generalized TSP)
 - [x] [Location comparison / relocation scorecard](docs/proposals/10-location-comparison.md)
       — rank N addresses by weighted access (`compare` / `compare_locations`)
-- [ ] [Export, bulk scoring & offline datasets](docs/proposals/12-export-bulk-offline.md)
-      — leverages OSM's freely-storable data (commercial APIs forbid this)
+- [~] [Export, bulk scoring & offline datasets](docs/proposals/12-export-bulk-offline.md)
+      — leverages OSM's freely-storable data (commercial APIs forbid this).
+      v1: `near --format geojson|csv` with an ODbL notice. Bulk/snapshot/offline pending.
 
 ### Platform
 

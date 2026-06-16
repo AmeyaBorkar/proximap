@@ -24,3 +24,4 @@ export * from './nearby';
 export * from './gaps';
 export * from './walkability';
 export * from './compare';
+export * from './export';
