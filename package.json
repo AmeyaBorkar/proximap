@@ -1,0 +1,31 @@
+{
+  "name": "proximap-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Monorepo for proximap — a geospatial toolkit for places, proximity, and amenities.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ameya Borkar <ameyaborkar17@gmail.com>",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @proximap/core && npm run build -w @proximap/cli && npm run build -w @proximap/mcp",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run build && npm run typecheck && npm run format:check && npm run test"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "prettier": "^3.8.4",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

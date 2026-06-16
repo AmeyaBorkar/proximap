@@ -1,0 +1,52 @@
+{
+  "name": "@proximap/core",
+  "version": "0.1.0",
+  "description": "Core geospatial engine for proximap: geocoding, nearby places, and ranking. OpenStreetMap by default, pluggable providers.",
+  "keywords": [
+    "geocoding",
+    "maps",
+    "osm",
+    "openstreetmap",
+    "overpass",
+    "nominatim",
+    "amenities",
+    "poi",
+    "geospatial",
+    "proximity"
+  ],
+  "license": "MIT",
+  "author": "Ameya Borkar <ameyaborkar17@gmail.com>",
+  "homepage": "https://github.com/AmeyaBorkar/proximap#readme",
+  "bugs": "https://github.com/AmeyaBorkar/proximap/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmeyaBorkar/proximap.git",
+    "directory": "packages/core"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  }
+}

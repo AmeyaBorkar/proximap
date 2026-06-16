@@ -1,0 +1,46 @@
+{
+  "name": "@proximap/mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for proximap — geospatial tools for AI agents and Claude.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "ai",
+    "maps",
+    "geocoding",
+    "amenities"
+  ],
+  "license": "MIT",
+  "author": "Ameya Borkar <ameyaborkar17@gmail.com>",
+  "homepage": "https://github.com/AmeyaBorkar/proximap#readme",
+  "bugs": "https://github.com/AmeyaBorkar/proximap/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmeyaBorkar/proximap.git",
+    "directory": "packages/mcp"
+  },
+  "type": "module",
+  "bin": {
+    "proximap-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@proximap/core": "^0.1.0",
+    "zod": "^4.4.3"
+  }
+}

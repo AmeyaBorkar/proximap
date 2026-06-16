@@ -1,0 +1,45 @@
+{
+  "name": "@proximap/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for proximap — find and rank what's near any place.",
+  "keywords": [
+    "cli",
+    "maps",
+    "geocoding",
+    "amenities",
+    "osm",
+    "proximity"
+  ],
+  "license": "MIT",
+  "author": "Ameya Borkar <ameyaborkar17@gmail.com>",
+  "homepage": "https://github.com/AmeyaBorkar/proximap#readme",
+  "bugs": "https://github.com/AmeyaBorkar/proximap/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmeyaBorkar/proximap.git",
+    "directory": "packages/cli"
+  },
+  "type": "module",
+  "bin": {
+    "proximap": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@proximap/core": "^0.1.0",
+    "commander": "^15.0.0",
+    "picocolors": "^1.1.1"
+  }
+}
