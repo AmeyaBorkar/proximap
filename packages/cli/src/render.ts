@@ -3,6 +3,7 @@ import {
   formatDistance,
   formatDuration,
   type ComparisonReport,
+  type ErrandPlan,
   type GapReport,
   type NearbyResult,
   type OpenState,
@@ -203,6 +204,36 @@ export function renderScore(report: WalkabilityReport): string {
     lines.push(
       pc.yellow('Low confidence — OSM coverage here looks sparse; treat the score as a floor.'),
     );
+  }
+  return lines.join('\n');
+}
+
+/** Render an errand plan: ordered stops with per-leg time, total, and any gaps. */
+export function renderErrands(plan: ErrandPlan): string {
+  const { origin, end, stops, totalSeconds, totalMeters, missing, mode } = plan;
+  const word = MODE_WORDS[mode] ?? mode;
+  const lines: string[] = [
+    pc.bold(`Errand plan from ${origin.displayName}`),
+    pc.dim(
+      `${stops.length} stop${stops.length === 1 ? '' : 's'} · ` +
+        `${formatDuration(totalSeconds)} ${word} · ${formatDistance(totalMeters)} (straight-line estimate)`,
+    ),
+    '',
+  ];
+  if (stops.length === 0) {
+    lines.push(pc.dim('No reachable stops for the requested categories.'));
+  }
+  const stepWidth = String(stops.length).length;
+  stops.forEach((stop, index) => {
+    const step = String(index + 1).padStart(stepWidth);
+    const name = stop.poi.name ?? stop.poi.kind ?? stop.category;
+    const leg = pc.dim(`+${formatDuration(stop.legSeconds)} · ${formatDistance(stop.legMeters)}`);
+    lines.push(`${pc.dim(`${step}.`)} ${pc.bold(titleCase(stop.category))}: ${name}  ${leg}`);
+  });
+  if (end) lines.push(pc.dim(`   ↳ end: ${end.displayName}`));
+  if (missing.length > 0) {
+    lines.push('');
+    lines.push(pc.dim(`Not found nearby: ${missing.join(', ')}`));
   }
   return lines.join('\n');
 }

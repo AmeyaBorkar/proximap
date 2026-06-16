@@ -36,6 +36,9 @@ proximap near "Alexanderplatz, Berlin" -c cafe --by travel-time --mode walk
 # What's reachable within a 15-minute walk? (isochrone)
 proximap reachable "Alexanderplatz, Berlin" --within 15min --mode walk -c grocery
 
+# Shortest trip that hits one of each: pharmacy AND atm AND grocery (Generalized TSP)
+proximap errands "Alexanderplatz, Berlin" -c pharmacy -c atm -c grocery
+
 # Works with coordinates too
 proximap near "48.8584,2.2945"
 

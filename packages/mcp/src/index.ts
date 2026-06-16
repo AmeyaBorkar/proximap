@@ -6,6 +6,7 @@ import {
   detectGaps,
   findNearbyAmenities,
   NominatimGeocoder,
+  planErrands,
   reachableAmenities,
   ValhallaRoutingProvider,
   walkabilityScore,
@@ -13,6 +14,7 @@ import {
 import { z } from 'zod';
 import {
   toComparePayload,
+  toErrandsPayload,
   toGapsPayload,
   toGeocodePayload,
   toNearbyPayload,
@@ -322,6 +324,48 @@ server.registerTool(
         ...(language ? { language } : {}),
       });
       return jsonResult(toReachablePayload(result));
+    } catch (error) {
+      return errorResult(error);
+    }
+  },
+);
+
+server.registerTool(
+  'plan_errands',
+  {
+    title: 'Plan errands',
+    description:
+      'Plan the shortest trip from an origin that visits one of each requested category ' +
+      '(e.g. a pharmacy AND an ATM AND a grocery) — the Generalized-TSP "pick one per set, then ' +
+      'optimize" workflow. Returns the chosen places in visit order with per-leg and total travel. ' +
+      'Categories with no candidate nearby are reported as missing, not faked.',
+    inputSchema: {
+      query: z.string().describe('Starting place name, address, or "lat,lng" coordinates'),
+      categories: z
+        .array(z.string())
+        .min(1)
+        .describe('Categories to hit one of each, e.g. ["pharmacy", "atm", "grocery"]'),
+      mode: z.enum(['walk', 'bike', 'drive']).optional().describe('Travel mode (default walk)'),
+      end: z.string().optional().describe('Optional fixed end point (place or "lat,lng")'),
+      candidatesPerCategory: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Nearest candidates considered per category (default 5)'),
+      language: z.string().optional().describe('Preferred language for names'),
+    },
+  },
+  async ({ query, categories, mode, end, candidatesPerCategory, language }) => {
+    try {
+      const plan = await planErrands(query, {
+        categories,
+        ...(mode ? { mode } : {}),
+        ...(end ? { end } : {}),
+        ...(candidatesPerCategory ? { candidatesPerCategory } : {}),
+        ...(language ? { language } : {}),
+      });
+      return jsonResult(toErrandsPayload(plan));
     } catch (error) {
       return errorResult(error);
     }

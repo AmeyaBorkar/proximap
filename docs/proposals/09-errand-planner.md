@@ -1,6 +1,6 @@
 # 09 — Multi-stop errand planner (one-per-category)
 
-- **Status:** Proposed · **Tier:** P2 (signature) · **Novelty:** Novel · **Complexity:** Med
+- **Status:** Implemented (v1; exact grouped Held-Karp DP, haversine MVP matrix, optional routing engine) · **Tier:** P2 (signature) · **Novelty:** Novel · **Complexity:** Med
 
 ## Problem
 

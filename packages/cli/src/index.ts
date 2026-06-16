@@ -4,6 +4,7 @@ import {
   findNearbyAmenities,
   NominatimGeocoder,
   ODBL_ATTRIBUTION,
+  planErrands,
   reachableAmenities,
   toCSV,
   toGeoJSON,
@@ -17,6 +18,7 @@ import {
 import { Command } from 'commander';
 import {
   renderComparison,
+  renderErrands,
   renderGaps,
   renderGeocode,
   renderNearby,
@@ -74,6 +76,16 @@ interface ReachableCommandOptions {
   within: string;
   mode: string;
   category: string[];
+  lang?: string;
+  json?: boolean;
+}
+
+interface ErrandsCommandOptions {
+  category: string[];
+  mode: string;
+  end?: string;
+  candidates: string;
+  radius: string;
   lang?: string;
   json?: boolean;
 }
@@ -295,6 +307,22 @@ async function runReachable(query: string, options: ReachableCommandOptions): Pr
   process.stdout.write(`${output}\n`);
 }
 
+async function runErrands(query: string, options: ErrandsCommandOptions): Promise<void> {
+  if (options.category.length === 0) {
+    throw new Error('errands needs at least one -c/--category');
+  }
+  const plan = await planErrands(query, {
+    categories: options.category,
+    mode: parseMode(options.mode),
+    candidatesPerCategory: parsePositiveInt(options.candidates, 'candidates'),
+    searchRadiusMeters: parsePositiveInt(options.radius, 'radius'),
+    ...(options.end ? { end: options.end } : {}),
+    ...(options.lang ? { language: options.lang } : {}),
+  });
+  const output = options.json ? JSON.stringify(plan, null, 2) : renderErrands(plan);
+  process.stdout.write(`${output}\n`);
+}
+
 function fail(error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(`proximap: ${message}\n`);
@@ -384,6 +412,21 @@ program
   .option('--json', 'output raw JSON')
   .action((parts: string[], options: ReachableCommandOptions) =>
     runReachable(parts.join(' '), options),
+  );
+
+program
+  .command('errands')
+  .description('plan the shortest trip that hits one of each category')
+  .argument('<query...>', 'starting place name, address, or "lat,lng"')
+  .option('-c, --category <term>', 'a category to hit one of (repeatable, required)', collect, [])
+  .option('--mode <mode>', 'travel mode: walk, bike, drive', 'walk')
+  .option('--end <place>', 'optional fixed end point')
+  .option('--candidates <count>', 'nearest candidates considered per category', '5')
+  .option('-r, --radius <meters>', 'how far to look for candidates', '3000')
+  .option('--lang <code>', 'preferred language')
+  .option('--json', 'output raw JSON')
+  .action((parts: string[], options: ErrandsCommandOptions) =>
+    runErrands(parts.join(' '), options),
   );
 
 program

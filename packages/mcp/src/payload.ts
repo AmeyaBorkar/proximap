@@ -1,5 +1,6 @@
 import type {
   ComparisonReport,
+  ErrandPlan,
   GapReport,
   NearbyResult,
   Place,
@@ -37,6 +38,39 @@ export function toNearbyPayload(result: NearbyResult) {
       wheelchairDescription: poi.tags['wheelchair:description'] ?? null,
       openState: poi.openState ?? null,
       nextChange: poi.nextChange ?? null,
+    })),
+  };
+}
+
+/** Flatten an errand plan for agent consumption. */
+export function toErrandsPayload(plan: ErrandPlan) {
+  return {
+    origin: {
+      name: plan.origin.name,
+      displayName: plan.origin.displayName,
+      lat: plan.origin.location.lat,
+      lng: plan.origin.location.lng,
+    },
+    end: plan.end
+      ? {
+          displayName: plan.end.displayName,
+          lat: plan.end.location.lat,
+          lng: plan.end.location.lng,
+        }
+      : null,
+    mode: plan.mode,
+    totalSeconds: plan.totalSeconds,
+    totalMeters: plan.totalMeters,
+    missing: plan.missing,
+    stops: plan.stops.map((stop) => ({
+      category: stop.category,
+      name: stop.poi.name ?? null,
+      kind: stop.poi.kind ?? null,
+      osmId: stop.poi.id,
+      lat: stop.poi.location.lat,
+      lng: stop.poi.location.lng,
+      legSeconds: stop.legSeconds,
+      legMeters: stop.legMeters,
     })),
   };
 }

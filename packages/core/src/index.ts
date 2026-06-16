@@ -26,4 +26,5 @@ export * from './reachable';
 export * from './gaps';
 export * from './walkability';
 export * from './compare';
+export * from './errands';
 export * from './export';
