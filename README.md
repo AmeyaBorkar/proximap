@@ -2,6 +2,11 @@
 
 > A geospatial toolkit for **places, proximity, and amenities** — built on OpenStreetMap, no API keys required.
 
+[![@proximap/core](https://img.shields.io/npm/v/@proximap/core?label=%40proximap%2Fcore)](https://www.npmjs.com/package/@proximap/core)
+[![@proximap/cli](https://img.shields.io/npm/v/@proximap/cli?label=%40proximap%2Fcli)](https://www.npmjs.com/package/@proximap/cli)
+[![CI](https://github.com/AmeyaBorkar/proximap/actions/workflows/ci.yml/badge.svg)](https://github.com/AmeyaBorkar/proximap/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/npm/l/@proximap/core)](LICENSE)
+
 `proximap` started with _"what's near here, and in what order?"_ and grew into a small toolkit for
 reasoning about access to places: rank nearby amenities by distance **or travel time**, score how
 **walkable** somewhere is, find what's **missing**, see what's **reachable** in 15 minutes, plan the
@@ -10,8 +15,8 @@ shortest **multi-stop errand**, and **compare** candidate neighbourhoods — all
 It ships as a **library**, a **CLI**, and an **MCP server** (so AI agents like Claude can call it as a
 tool). The same engine is designed to be ported to Python for PyPI, and a Web UI is planned.
 
-> **Status:** v0, pre-1.0. The feature surface below is implemented and tested against live OSM; the
-> API is stabilising and may change before 1.0.
+> **Status:** **v1.0 — published on npm.** The public API is stable per [SemVer](https://semver.org):
+> breaking changes bump the major version, features the minor. See the [changelog](CHANGELOG.md).
 
 ## Why
 

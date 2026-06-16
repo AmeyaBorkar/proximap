@@ -1,6 +1,6 @@
 {
   "name": "proximap-monorepo",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Monorepo for proximap — a geospatial toolkit for places, proximity, and amenities.",
   "type": "module",

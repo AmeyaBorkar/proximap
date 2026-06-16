@@ -1,6 +1,6 @@
 {
   "name": "@proximap/core",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Core geospatial engine for proximap: geocoding, nearby places, and ranking. OpenStreetMap by default, pluggable providers.",
   "keywords": [
     "geocoding",
@@ -36,7 +36,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "sideEffects": false,
   "engines": {
@@ -47,6 +48,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   }
 }

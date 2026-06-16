@@ -22,7 +22,7 @@ import {
   toScorePayload,
 } from './payload';
 
-const VERSION = '0.1.0';
+const VERSION = '1.0.0';
 
 function jsonResult(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };

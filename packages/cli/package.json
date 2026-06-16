@@ -1,6 +1,6 @@
 {
   "name": "@proximap/cli",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Command-line interface for proximap — find and rank what's near any place.",
   "keywords": [
     "cli",
@@ -25,7 +25,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20"
@@ -35,10 +36,11 @@
   },
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@proximap/core": "^0.1.0",
+    "@proximap/core": "^1.0.0",
     "commander": "^15.0.0",
     "picocolors": "^1.1.1"
   }

@@ -1,6 +1,6 @@
 {
   "name": "@proximap/mcp",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Model Context Protocol server for proximap — geospatial tools for AI agents and Claude.",
   "keywords": [
     "mcp",
@@ -26,7 +26,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20"
@@ -36,11 +37,12 @@
   },
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@proximap/core": "^0.1.0",
+    "@proximap/core": "^1.0.0",
     "zod": "^4.4.3"
   }
 }
