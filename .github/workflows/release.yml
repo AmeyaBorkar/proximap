@@ -1,0 +1,45 @@
+name: Release
+
+# Publishes @proximap/core, @proximap/cli, @proximap/mcp to npm when a version
+# tag (e.g. v1.0.0) is pushed, with npm provenance, and cuts a GitHub release.
+# Requires an NPM_TOKEN repo secret (an npm automation/granular token with
+# read+write to the @proximap scope).
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # create the GitHub release
+  id-token: write # npm provenance (OIDC)
+
+jobs:
+  publish:
+    name: publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run check
+      - name: Publish @proximap/core
+        run: npm publish --provenance --access public --workspace @proximap/core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @proximap/cli
+        run: npm publish --provenance --access public --workspace @proximap/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @proximap/mcp
+        run: npm publish --provenance --access public --workspace @proximap/mcp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
