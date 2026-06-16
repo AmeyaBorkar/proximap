@@ -1,6 +1,6 @@
 # 03 — Resilient, cached, policy-safe OSM client
 
-- **Status:** Proposed · **Tier:** P0 (foundation) · **Novelty:** Differentiated · **Complexity:** Low–Med
+- **Status:** Implemented (v1) · **Tier:** P0 (foundation) · **Novelty:** Differentiated · **Complexity:** Low–Med
 
 ## Problem
 

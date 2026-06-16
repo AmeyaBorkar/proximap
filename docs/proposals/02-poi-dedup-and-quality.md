@@ -1,6 +1,6 @@
 # 02 — POI dedup, centroids & quality signals
 
-- **Status:** Proposed · **Tier:** P0 (foundation) · **Novelty:** Differentiated · **Complexity:** Med
+- **Status:** Implemented (v1; polygon-centroid follow-up pending) · **Tier:** P0 (foundation) · **Novelty:** Differentiated · **Complexity:** Med
 
 ## Problem
 

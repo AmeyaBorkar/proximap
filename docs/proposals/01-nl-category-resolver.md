@@ -1,6 +1,6 @@
 # 01 — Natural-language category resolver
 
-- **Status:** Proposed · **Tier:** P0 (foundation) · **Novelty:** Differentiated · **Complexity:** Med
+- **Status:** Implemented (v1) · **Tier:** P0 (foundation) · **Novelty:** Differentiated · **Complexity:** Med
 
 ## Problem
 

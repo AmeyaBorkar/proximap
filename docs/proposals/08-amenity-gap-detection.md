@@ -1,6 +1,6 @@
 # 08 — Amenity gap / "desert" detection
 
-- **Status:** Proposed · **Tier:** P1 (signature) · **Novelty:** Novel · **Complexity:** Low–Med
+- **Status:** Implemented (v1) · **Tier:** P1 (signature) · **Novelty:** Novel · **Complexity:** Low–Med
 
 ## Problem
 
