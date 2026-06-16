@@ -56,9 +56,13 @@ const walk = await walkabilityScore('Brandenburg Gate, Berlin');
 console.log(walk.score, walk.confidence, walk.breakdown);
 ```
 
+`findNearbyAmenities` also takes `filters` (diet/payment/wifi/wheelchair…),
+`accessible` (step-free-first ranking), and `open` (`'now'` or `{ at }`) to keep
+only places open at a time — unknown hours are kept and labelled, not dropped.
+
 Also exported: `NominatimGeocoder`, `OverpassPlacesProvider`, `rankByProximity`,
-`nearestMatchingPoi`, `categorize`, `haversineMeters`, `formatDistance`,
-`CATEGORIES`, and the domain types. See the
+`nearestMatchingPoi`, `isOpenAt`, `categorize`, `haversineMeters`,
+`formatDistance`, `CATEGORIES`, and the domain types. See the
 [main README](https://github.com/AmeyaBorkar/proximap#readme).
 
 ## License

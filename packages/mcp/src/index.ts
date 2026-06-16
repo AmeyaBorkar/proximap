@@ -58,6 +58,13 @@ server.registerTool(
         .boolean()
         .optional()
         .describe('Rank step-free / wheelchair-accessible places first'),
+      open: z
+        .string()
+        .optional()
+        .describe(
+          'Keep only places open at this time: "now", or an ISO datetime like ' +
+            '"2026-06-20T21:00". Unknown-hours places are kept and labelled.',
+        ),
       limit: z
         .number()
         .int()
@@ -67,13 +74,15 @@ server.registerTool(
       language: z.string().optional().describe('Preferred language for names, e.g. "en"'),
     },
   },
-  async ({ query, radiusMeters, categories, filters, accessible, limit, language }) => {
+  async ({ query, radiusMeters, categories, filters, accessible, open, limit, language }) => {
     try {
+      const openOption = open === 'now' ? 'now' : open ? { at: open } : undefined;
       const result = await findNearbyAmenities(query, {
         ...(radiusMeters ? { radiusMeters } : {}),
         ...(categories ? { categories } : {}),
         ...(filters ? { filters } : {}),
         ...(accessible ? { accessible } : {}),
+        ...(openOption ? { open: openOption } : {}),
         ...(limit ? { limit } : {}),
         ...(language ? { language } : {}),
       });

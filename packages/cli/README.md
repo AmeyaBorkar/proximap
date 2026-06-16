@@ -26,6 +26,10 @@ proximap near "Kreuzberg, Berlin" -c food --filter diet=vegan --filter takeaway 
 # Accessibility-first: rank step-free / wheelchair-accessible places first
 proximap near "Bahnhofstrasse, Zürich" -c food --accessible
 
+# Only what's open right now (or at a future time); unknown hours are kept + labelled
+proximap near "Shibuya, Tokyo" -c coffee --open-now
+proximap near "Shibuya, Tokyo" -c food --open-at 2026-06-20T21:00
+
 # Works with coordinates too
 proximap near "48.8584,2.2945"
 

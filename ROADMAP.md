@@ -30,7 +30,8 @@ commodities like routing/isochrones. Full designs live in
 
 ### P1 — next milestone
 
-- [ ] [Open-now / open-at](docs/proposals/04-open-now.md) — query by `opening_hours`
+- [x] [Open-now / open-at](docs/proposals/04-open-now.md) — query by `opening_hours`
+      (`--open-now`, `--open-at`; dependency-free evaluator)
 - [x] [Facet filters + accessibility-first search](docs/proposals/05-facets-and-accessibility.md)
       — diet/payment/wifi + wheelchair/step-free ranking (`--filter`, `--accessible`)
 - [ ] [Travel-time ranking & isochrone reachability](docs/proposals/06-travel-time-and-isochrones.md)

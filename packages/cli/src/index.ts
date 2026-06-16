@@ -16,6 +16,8 @@ interface NearOptions {
   category: string[];
   filter: string[];
   accessible?: boolean;
+  openNow?: boolean;
+  openAt?: string;
   limit: string;
   lang?: string;
   json?: boolean;
@@ -112,12 +114,14 @@ async function runNear(query: string, options: NearOptions): Promise<void> {
   const limit = parsePositiveInt(options.limit, 'limit');
 
   const filters = parseFilters(options.filter);
+  const open = options.openAt ? { at: options.openAt } : options.openNow ? 'now' : undefined;
   const result = await findNearbyAmenities(query, {
     radiusMeters,
     limit,
     ...(options.category.length > 0 ? { categories: options.category } : {}),
     ...(Object.keys(filters).length > 0 ? { filters } : {}),
     ...(options.accessible ? { accessible: true } : {}),
+    ...(open ? { open } : {}),
     ...(options.lang ? { language: options.lang } : {}),
   });
 
@@ -192,6 +196,8 @@ program
     [],
   )
   .option('--accessible', 'rank step-free / wheelchair-accessible places first')
+  .option('--open-now', 'keep only places open right now (unknown hours kept, labelled)')
+  .option('--open-at <when>', 'keep only places open at an ISO time, e.g. 2026-06-20T21:00')
   .option('-n, --limit <count>', 'maximum number of results', '20')
   .option('--lang <code>', 'preferred language for place names (e.g. en)')
   .option('--json', 'output raw JSON instead of a list')

@@ -1,6 +1,6 @@
 # 04 — Open-now / open-at filtering & ranking
 
-- **Status:** Proposed · **Tier:** P1 · **Novelty:** Differentiated · **Complexity:** Med–High
+- **Status:** Implemented (v1; dependency-free evaluator for the common grammar subset — unsupported constructs and timezone-shifting are documented follow-ups) · **Tier:** P1 · **Novelty:** Differentiated · **Complexity:** Med–High
 
 ## Problem
 

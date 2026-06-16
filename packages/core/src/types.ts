@@ -83,6 +83,9 @@ export interface Poi {
   lastVerified?: string;
 }
 
+/** Whether a place is open at a given time: known states or "not enough data". */
+export type OpenState = 'open' | 'closed' | 'unknown';
+
 /** A {@link Poi} enriched with distance from the search origin and a rank. */
 export interface RankedPoi extends Poi {
   /** Great-circle distance from the origin, in metres. */
@@ -91,6 +94,10 @@ export interface RankedPoi extends Poi {
   score: number;
   /** 1-based position after ranking. */
   rank: number;
+  /** Open/closed/unknown at the queried time — set only when `open` was requested. */
+  openState?: OpenState;
+  /** ISO 8601 timestamp of the next open/closed transition, when computable. */
+  nextChange?: string;
 }
 
 /** Options for a geocoding lookup. */

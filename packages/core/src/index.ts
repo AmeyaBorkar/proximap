@@ -13,6 +13,7 @@ export * from './geo';
 export * from './categories';
 export * from './taxonomy';
 export * from './quality';
+export * from './hours';
 export * from './http';
 export * from './providers';
 export * from './ranking';

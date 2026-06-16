@@ -25,6 +25,8 @@ export function toNearbyPayload(result: NearbyResult) {
       lastVerified: poi.lastVerified ?? null,
       wheelchair: poi.tags.wheelchair ?? null,
       wheelchairDescription: poi.tags['wheelchair:description'] ?? null,
+      openState: poi.openState ?? null,
+      nextChange: poi.nextChange ?? null,
     })),
   };
 }

@@ -1,4 +1,5 @@
 import { accessibleScorer, compileFacets, matchesFacets, type FacetFilters } from './filters';
+import { isOpenAt, type OpeningEvaluation } from './hours';
 import { resolveOrigin } from './origin';
 import { NominatimGeocoder } from './providers/nominatim';
 import { OverpassPlacesProvider } from './providers/overpass';
@@ -44,6 +45,14 @@ export interface FindNearbyOptions {
    * custom `rank.scoreFn` is supplied.
    */
   accessible?: boolean;
+  /**
+   * Keep only places open at this time and annotate each result with
+   * `openState`/`nextChange`. `'now'` uses the current time; `{ at }` takes an
+   * ISO string or Date. Places whose hours are unknown are kept and labelled
+   * `unknown` (never silently dropped); only confirmed-closed places are
+   * removed. Times are read as the POI's local wall-clock (see {@link isOpenAt}).
+   */
+  open?: 'now' | { at: string | Date };
   /** Ranking tweaks (category weights or a custom scorer). */
   rank?: RankOptions;
   signal?: AbortSignal;
@@ -92,10 +101,33 @@ export async function findNearbyAmenities(
     if (predicates.length > 0) pois = pois.filter((poi) => matchesFacets(poi.tags, predicates));
   }
 
+  // Drop confirmed-closed places (keep open + unknown), remembering each
+  // evaluation so it can annotate the ranked results below.
+  let openEval: Map<string, OpeningEvaluation> | null = null;
+  if (options.open) {
+    const when = options.open === 'now' ? new Date() : new Date(options.open.at);
+    openEval = new Map();
+    pois = pois.filter((poi) => {
+      const evaluation = isOpenAt(poi.tags.opening_hours, when);
+      openEval!.set(poi.id, evaluation);
+      return evaluation.state !== 'closed';
+    });
+  }
+
   const rankOptions: RankOptions = { radiusMeters, ...options.rank };
   if (options.accessible && !rankOptions.scoreFn) rankOptions.scoreFn = accessibleScorer();
 
-  const ranked = rankByProximity(origin.location, pois, rankOptions);
+  let ranked = rankByProximity(origin.location, pois, rankOptions);
+  if (openEval) {
+    ranked = ranked.map((poi) => {
+      const evaluation = openEval!.get(poi.id);
+      if (!evaluation) return poi;
+      const annotated: RankedPoi = { ...poi, openState: evaluation.state };
+      if (evaluation.nextChange) annotated.nextChange = evaluation.nextChange;
+      return annotated;
+    });
+  }
+
   const limit = options.limit ?? DEFAULT_LIMIT;
   const results = limit > 0 ? ranked.slice(0, limit) : ranked;
   return { origin, results, total: ranked.length };

@@ -3,7 +3,9 @@ import {
   formatDistance,
   type GapReport,
   type NearbyResult,
+  type OpenState,
   type Place,
+  type RankedPoi,
   type WalkabilityReport,
 } from '@proximap/core';
 import pc from 'picocolors';
@@ -34,7 +36,8 @@ export function renderNearby(result: NearbyResult): string {
     const label = CATEGORY_LABELS[poi.category];
     const name = poi.name ?? poi.kind ?? label;
     const meta = pc.dim(`${label} · ${formatDistance(poi.distanceMeters)}`);
-    lines.push(`${pc.dim(`${rank}.`)} ${name}  ${meta}${accessibilityMark(poi.tags.wheelchair)}`);
+    const tags = `${accessibilityMark(poi.tags.wheelchair)}${openMark(poi)}`;
+    lines.push(`${pc.dim(`${rank}.`)} ${name}  ${meta}${tags}`);
   }
   return lines.join('\n');
 }
@@ -43,6 +46,22 @@ export function renderNearby(result: NearbyResult): string {
 function accessibilityMark(wheelchair: string | undefined): string {
   if (wheelchair === 'yes') return `  ${pc.green('♿')}`;
   if (wheelchair === 'limited') return `  ${pc.yellow('♿ limited')}`;
+  return '';
+}
+
+const localHhmm = (iso: string): string => {
+  const date = new Date(iso);
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+};
+
+/** An open/closed indicator, shown only when an `open` query was made. */
+function openMark(poi: RankedPoi): string {
+  const state: OpenState | undefined = poi.openState;
+  if (state === 'open') {
+    const till = poi.nextChange ? ` ${pc.dim(`till ${localHhmm(poi.nextChange)}`)}` : '';
+    return `  ${pc.green('open')}${till}`;
+  }
+  if (state === 'unknown') return `  ${pc.dim('hours?')}`;
   return '';
 }
 

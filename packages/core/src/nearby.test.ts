@@ -120,3 +120,75 @@ describe('findNearbyAmenities — natural-language categories', () => {
     ).rejects.toThrow(/Unknown category.*coffee/);
   });
 });
+
+const withHours: PlacesProvider = {
+  name: 'with-hours',
+  async findNearby() {
+    const pois: Poi[] = [
+      {
+        id: 'open',
+        name: 'Open Cafe',
+        category: 'food',
+        location: { lat: 0, lng: 0.001 },
+        tags: { amenity: 'cafe', opening_hours: 'Mo-Fr 09:00-17:00' },
+        source: 'with-hours',
+      },
+      {
+        id: 'closed',
+        name: 'Evening Bar',
+        category: 'food',
+        location: { lat: 0, lng: 0.0005 },
+        tags: { amenity: 'bar', opening_hours: 'Mo-Fr 18:00-23:00' },
+        source: 'with-hours',
+      },
+      {
+        id: 'mystery',
+        name: 'Mystery Diner',
+        category: 'food',
+        location: { lat: 0, lng: 0.0015 },
+        tags: { amenity: 'restaurant', opening_hours: 'sunrise-sunset' },
+        source: 'with-hours',
+      },
+      {
+        id: 'untagged',
+        name: 'No Hours Kiosk',
+        category: 'food',
+        location: { lat: 0, lng: 0.002 },
+        tags: { amenity: 'fast_food' },
+        source: 'with-hours',
+      },
+    ];
+    return pois;
+  },
+};
+
+describe('findNearbyAmenities — open-now / open-at', () => {
+  // 2026-01-05 is a Monday; 10:00 falls inside 09:00-17:00.
+  const at = '2026-01-05T10:00:00';
+
+  it('drops confirmed-closed places but keeps open and unknown ones', async () => {
+    const { results } = await findNearbyAmenities('somewhere', {
+      geocoder,
+      places: withHours,
+      open: { at },
+      radiusMeters: 1000,
+    });
+    const ids = results.map((r) => r.id);
+    expect(ids).not.toContain('closed');
+    expect(ids).toEqual(expect.arrayContaining(['open', 'mystery', 'untagged']));
+  });
+
+  it('annotates results with openState and a next-change time', async () => {
+    const { results } = await findNearbyAmenities('somewhere', {
+      geocoder,
+      places: withHours,
+      open: { at },
+      radiusMeters: 1000,
+    });
+    const byId = Object.fromEntries(results.map((r) => [r.id, r]));
+    expect(byId.open!.openState).toBe('open');
+    expect(new Date(byId.open!.nextChange!).getHours()).toBe(17); // closes at 17:00
+    expect(byId.mystery!.openState).toBe('unknown');
+    expect(byId.untagged!.openState).toBe('unknown');
+  });
+});
