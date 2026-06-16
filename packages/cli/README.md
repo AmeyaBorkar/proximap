@@ -41,6 +41,9 @@ proximap gaps "Brandenburg Gate, Berlin" --radius 3000 --threshold 1000
 
 # How walkable / well-served is this address? (0-100, with a breakdown)
 proximap score "Brandenburg Gate, Berlin"
+
+# Compare places to live by access to what you care about
+proximap compare "Prenzlauer Berg, Berlin" "Marzahn, Berlin" --weights grocery=3,transport=2,park=2
 ```
 
 Run `proximap --help` or `proximap <command> --help` for all options.

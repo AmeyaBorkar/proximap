@@ -1,4 +1,10 @@
-import type { GapReport, NearbyResult, Place, WalkabilityReport } from '@proximap/core';
+import type {
+  ComparisonReport,
+  GapReport,
+  NearbyResult,
+  Place,
+  WalkabilityReport,
+} from '@proximap/core';
 
 /** Flatten a nearby-search result into a compact, agent-friendly object. */
 export function toNearbyPayload(result: NearbyResult) {
@@ -72,5 +78,35 @@ export function toScorePayload(report: WalkabilityReport) {
     decay: report.decay,
     breakdown: report.breakdown,
     missing: report.missing,
+  };
+}
+
+/** Flatten a location-comparison report for agent consumption. */
+export function toComparePayload(report: ComparisonReport) {
+  return {
+    ranked: report.ranked.map((entry) => ({
+      index: entry.index,
+      displayName: entry.origin.displayName,
+      score: entry.score,
+    })),
+    best: report.best
+      ? {
+          index: report.best.index,
+          displayName: report.best.origin.displayName,
+          score: report.best.score,
+        }
+      : null,
+    weights: report.weights,
+    dimensions: report.dimensions,
+    locations: report.locations.map((location) => ({
+      name: location.origin.name,
+      displayName: location.origin.displayName,
+      lat: location.origin.location.lat,
+      lng: location.origin.location.lng,
+      score: location.score,
+      confidence: location.confidence,
+      missing: location.missing,
+      breakdown: location.breakdown,
+    })),
   };
 }

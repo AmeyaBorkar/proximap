@@ -2,13 +2,20 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   categoryVocabulary,
+  compareLocations,
   detectGaps,
   findNearbyAmenities,
   NominatimGeocoder,
   walkabilityScore,
 } from '@proximap/core';
 import { z } from 'zod';
-import { toGapsPayload, toGeocodePayload, toNearbyPayload, toScorePayload } from './payload';
+import {
+  toComparePayload,
+  toGapsPayload,
+  toGeocodePayload,
+  toNearbyPayload,
+  toScorePayload,
+} from './payload';
 
 const VERSION = '0.1.0';
 
@@ -206,6 +213,49 @@ server.registerTool(
         ...(language ? { language } : {}),
       });
       return jsonResult(toScorePayload(report));
+    } catch (error) {
+      return errorResult(error);
+    }
+  },
+);
+
+server.registerTool(
+  'compare_locations',
+  {
+    title: 'Compare locations',
+    description:
+      'Compare two or more candidate locations (e.g. places to live) by access to weighted ' +
+      'daily-need categories, returning a ranked scorecard with a per-dimension winner and a ' +
+      'confidence note. Key-free and OSM-native. Out of scope (not in OSM): transit frequency, ' +
+      'school quality, crime, prices.',
+    inputSchema: {
+      locations: z
+        .array(z.string())
+        .min(2)
+        .describe('Two or more place names, addresses, or "lat,lng" strings'),
+      weights: z
+        .record(z.string(), z.number().positive())
+        .optional()
+        .describe('Category term to weight, e.g. { "food": 2, "transport": 3 }'),
+      idealMeters: z.number().positive().optional().describe('Full-marks distance (default 400)'),
+      maxMeters: z.number().positive().optional().describe('Zero-score distance (default 2400)'),
+      language: z.string().optional().describe('Preferred language for names'),
+    },
+  },
+  async ({ locations, weights, idealMeters, maxMeters, language }) => {
+    try {
+      const categories = weights
+        ? Object.entries(weights).map(([term, weight]) => ({ term, weight }))
+        : undefined;
+      const decay: { idealMeters?: number; maxMeters?: number } = {};
+      if (idealMeters) decay.idealMeters = idealMeters;
+      if (maxMeters) decay.maxMeters = maxMeters;
+      const report = await compareLocations(locations, {
+        ...(categories ? { categories } : {}),
+        ...(Object.keys(decay).length > 0 ? { decay } : {}),
+        ...(language ? { language } : {}),
+      });
+      return jsonResult(toComparePayload(report));
     } catch (error) {
       return errorResult(error);
     }

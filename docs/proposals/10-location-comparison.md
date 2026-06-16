@@ -1,6 +1,6 @@
 # 10 — Location comparison / relocation scorecard
 
-- **Status:** Proposed · **Tier:** P2 · **Novelty:** Differentiated · **Complexity:** Med
+- **Status:** Implemented (v1) · **Tier:** P2 · **Novelty:** Differentiated · **Complexity:** Med
 
 ## Problem
 

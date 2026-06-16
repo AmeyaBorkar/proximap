@@ -1,13 +1,15 @@
 import {
+  compareLocations,
   detectGaps,
   findNearbyAmenities,
   NominatimGeocoder,
   walkabilityScore,
+  type CategoryWeight,
   type FacetFilters,
   type GeocodeOptions,
 } from '@proximap/core';
 import { Command } from 'commander';
-import { renderGaps, renderGeocode, renderNearby, renderScore } from './render';
+import { renderComparison, renderGaps, renderGeocode, renderNearby, renderScore } from './render';
 
 const VERSION = '0.1.0';
 
@@ -38,6 +40,14 @@ interface GapsCommandOptions {
 }
 
 interface ScoreCommandOptions {
+  ideal: string;
+  max: string;
+  lang?: string;
+  json?: boolean;
+}
+
+interface CompareCommandOptions {
+  weights?: string;
   ideal: string;
   max: string;
   lang?: string;
@@ -165,6 +175,38 @@ async function runScore(query: string, options: ScoreCommandOptions): Promise<vo
   process.stdout.write(`${output}\n`);
 }
 
+/** Parse `term=weight,term=weight` into CategoryWeight[]. */
+function parseWeights(spec: string): CategoryWeight[] {
+  const weights: CategoryWeight[] = [];
+  for (const part of spec.split(',')) {
+    const [term, value] = part.split('=');
+    const name = (term ?? '').trim();
+    const weight = Number(value);
+    if (!name || !Number.isFinite(weight) || weight <= 0) {
+      throw new Error(`invalid --weights entry: "${part}" (use term=weight, e.g. food=2)`);
+    }
+    weights.push({ term: name, weight });
+  }
+  if (weights.length === 0) throw new Error('--weights needs at least one term=weight');
+  return weights;
+}
+
+async function runCompare(queries: string[], options: CompareCommandOptions): Promise<void> {
+  const idealMeters = parsePositiveInt(options.ideal, 'ideal');
+  const maxMeters = parsePositiveInt(options.max, 'max');
+  if (maxMeters <= idealMeters) {
+    throw new Error('--max must be greater than --ideal');
+  }
+  const categories = options.weights ? parseWeights(options.weights) : undefined;
+  const report = await compareLocations(queries, {
+    decay: { idealMeters, maxMeters },
+    ...(categories ? { categories } : {}),
+    ...(options.lang ? { language: options.lang } : {}),
+  });
+  const output = options.json ? JSON.stringify(report, null, 2) : renderComparison(report);
+  process.stdout.write(`${output}\n`);
+}
+
 function fail(error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(`proximap: ${message}\n`);
@@ -239,5 +281,19 @@ program
   .option('--lang <code>', 'preferred language')
   .option('--json', 'output raw JSON')
   .action((parts: string[], options: ScoreCommandOptions) => runScore(parts.join(' '), options));
+
+program
+  .command('compare')
+  .description('compare 2+ locations by access to what you care about')
+  .argument('<locations...>', 'two or more quoted place names, addresses, or "lat,lng"')
+  .option(
+    '-w, --weights <list>',
+    'comma list term=weight, e.g. food=2,transport=3 (default: daily needs)',
+  )
+  .option('--ideal <meters>', 'distance that still scores full marks', '400')
+  .option('--max <meters>', 'distance beyond which a category scores zero', '2400')
+  .option('--lang <code>', 'preferred language')
+  .option('--json', 'output raw JSON')
+  .action((locations: string[], options: CompareCommandOptions) => runCompare(locations, options));
 
 program.parseAsync().catch(fail);

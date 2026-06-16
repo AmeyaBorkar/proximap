@@ -1,6 +1,7 @@
 import {
   CATEGORY_LABELS,
   formatDistance,
+  type ComparisonReport,
   type GapReport,
   type NearbyResult,
   type OpenState,
@@ -149,6 +150,44 @@ export function renderScore(report: WalkabilityReport): string {
     lines.push(
       pc.yellow('Low confidence — OSM coverage here looks sparse; treat the score as a floor.'),
     );
+  }
+  return lines.join('\n');
+}
+
+/** Render a location-comparison scorecard: ranked locations + per-dimension winners. */
+export function renderComparison(report: ComparisonReport): string {
+  const weightStr = report.weights.map((w) => `${titleCase(w.term)}×${w.weight}`).join(', ');
+  const lines: string[] = [pc.bold('Location comparison'), pc.dim(`weights: ${weightStr}`), ''];
+
+  const rankWidth = String(report.ranked.length).length;
+  report.ranked.forEach((entry, position) => {
+    const location = report.locations[entry.index]!;
+    const marker = position === 0 ? pc.green('★') : ' ';
+    const rank = String(position + 1).padStart(rankWidth);
+    lines.push(`${marker} ${pc.dim(`${rank}.`)} ${pc.bold(entry.origin.displayName)}`);
+    lines.push(
+      `     ${pc.dim(`${entry.score}/100 · confidence ${Math.round(location.confidence * 100)}%`)}`,
+    );
+  });
+
+  lines.push('');
+  lines.push(pc.bold('Best per category:'));
+  const nameWidth = Math.max(...report.dimensions.map((d) => titleCase(d.category).length));
+  for (const dimension of report.dimensions) {
+    const name = titleCase(dimension.category).padEnd(nameWidth);
+    let detail: string;
+    if (dimension.bestIndex === null) {
+      detail = pc.dim('none found');
+    } else {
+      const location = report.locations[dimension.bestIndex]!;
+      const entry = location.breakdown.find((b) => b.category === dimension.category);
+      const distance =
+        entry && entry.nearestMeters !== null
+          ? pc.dim(` (${formatDistance(entry.nearestMeters)})`)
+          : '';
+      detail = `${location.origin.name}${distance}`;
+    }
+    lines.push(`  ${name}  ${detail}`);
   }
   return lines.join('\n');
 }

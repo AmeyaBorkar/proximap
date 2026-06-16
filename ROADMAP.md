@@ -47,7 +47,8 @@ commodities like routing/isochrones. Full designs live in
 
 - [ ] [Multi-stop errand planner](docs/proposals/09-errand-planner.md)
       — **most novel**: one POI per category, shortest trip (Generalized TSP)
-- [ ] [Location comparison / relocation scorecard](docs/proposals/10-location-comparison.md)
+- [x] [Location comparison / relocation scorecard](docs/proposals/10-location-comparison.md)
+      — rank N addresses by weighted access (`compare` / `compare_locations`)
 - [ ] [Export, bulk scoring & offline datasets](docs/proposals/12-export-bulk-offline.md)
       — leverages OSM's freely-storable data (commercial APIs forbid this)
 
