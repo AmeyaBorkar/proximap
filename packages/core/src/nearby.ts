@@ -1,3 +1,4 @@
+import { accessibleScorer, compileFacets, matchesFacets, type FacetFilters } from './filters';
 import { resolveOrigin } from './origin';
 import { NominatimGeocoder } from './providers/nominatim';
 import { OverpassPlacesProvider } from './providers/overpass';
@@ -31,6 +32,18 @@ export interface FindNearbyOptions {
   geocoder?: GeocodingProvider;
   /** Override the places provider (default: Overpass/OSM). */
   places?: PlacesProvider;
+  /**
+   * Composable consumer/accessibility facets (diet, payment, wifi, wheelchair…).
+   * A POI must satisfy every active facet; a missing tag means "not a match",
+   * never asserted as the feature being absent.
+   */
+  filters?: FacetFilters;
+  /**
+   * Accessibility-first ranking: step-free POIs rank above `limited`, above
+   * unknown/none, with distance breaking ties within each tier. Ignored when a
+   * custom `rank.scoreFn` is supplied.
+   */
+  accessible?: boolean;
   /** Ranking tweaks (category weights or a custom scorer). */
   rank?: RankOptions;
   signal?: AbortSignal;
@@ -71,10 +84,18 @@ export async function findNearbyAmenities(
   if (options.signal) nearbyOptions.signal = options.signal;
 
   const found = await places.findNearby(origin.location, nearbyOptions);
-  const pois =
+  let pois =
     selectors.length > 0 ? found.filter((poi) => tagsMatchAnySelector(poi.tags, selectors)) : found;
 
-  const ranked = rankByProximity(origin.location, pois, { radiusMeters, ...options.rank });
+  if (options.filters) {
+    const predicates = compileFacets(options.filters);
+    if (predicates.length > 0) pois = pois.filter((poi) => matchesFacets(poi.tags, predicates));
+  }
+
+  const rankOptions: RankOptions = { radiusMeters, ...options.rank };
+  if (options.accessible && !rankOptions.scoreFn) rankOptions.scoreFn = accessibleScorer();
+
+  const ranked = rankByProximity(origin.location, pois, rankOptions);
   const limit = options.limit ?? DEFAULT_LIMIT;
   const results = limit > 0 ? ranked.slice(0, limit) : ranked;
   return { origin, results, total: ranked.length };

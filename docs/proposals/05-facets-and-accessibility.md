@@ -1,6 +1,6 @@
 # 05 — Facet filters + accessibility-first search
 
-- **Status:** Proposed · **Tier:** P1 · **Novelty:** Differentiated · **Complexity:** Low–Med
+- **Status:** Implemented (v1; JS post-filter + accessibility ranking. Overpass push-down and the curb-cut/tactile-paving footway pass are follow-ups) · **Tier:** P1 · **Novelty:** Differentiated · **Complexity:** Low–Med
 
 ## Problem
 

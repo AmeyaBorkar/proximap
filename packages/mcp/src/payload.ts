@@ -23,6 +23,8 @@ export function toNearbyPayload(result: NearbyResult) {
       osmId: poi.id,
       completeness: poi.completeness ?? null,
       lastVerified: poi.lastVerified ?? null,
+      wheelchair: poi.tags.wheelchair ?? null,
+      wheelchairDescription: poi.tags['wheelchair:description'] ?? null,
     })),
   };
 }

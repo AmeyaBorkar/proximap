@@ -34,9 +34,16 @@ export function renderNearby(result: NearbyResult): string {
     const label = CATEGORY_LABELS[poi.category];
     const name = poi.name ?? poi.kind ?? label;
     const meta = pc.dim(`${label} · ${formatDistance(poi.distanceMeters)}`);
-    lines.push(`${pc.dim(`${rank}.`)} ${name}  ${meta}`);
+    lines.push(`${pc.dim(`${rank}.`)} ${name}  ${meta}${accessibilityMark(poi.tags.wheelchair)}`);
   }
   return lines.join('\n');
+}
+
+/** A compact step-free indicator for the nearby list, shown only when tagged. */
+function accessibilityMark(wheelchair: string | undefined): string {
+  if (wheelchair === 'yes') return `  ${pc.green('♿')}`;
+  if (wheelchair === 'limited') return `  ${pc.yellow('♿ limited')}`;
+  return '';
 }
 
 /** Render geocoding candidates with their addresses and coordinates. */

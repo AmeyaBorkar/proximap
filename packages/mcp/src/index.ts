@@ -41,6 +41,23 @@ server.registerTool(
         .array(z.string())
         .optional()
         .describe('Restrict to categories or terms, e.g. coffee, pharmacy, petrol'),
+      filters: z
+        .object({
+          diet: z.union([z.string(), z.array(z.string())]).optional(),
+          cuisine: z.union([z.string(), z.array(z.string())]).optional(),
+          payment: z.union([z.string(), z.array(z.string())]).optional(),
+          internetAccess: z.boolean().optional(),
+          outdoorSeating: z.boolean().optional(),
+          takeaway: z.boolean().optional(),
+          delivery: z.boolean().optional(),
+          wheelchair: z.union([z.string(), z.array(z.string())]).optional(),
+        })
+        .optional()
+        .describe('Facet filters: diet/cuisine/payment, wifi, takeaway, wheelchair, etc.'),
+      accessible: z
+        .boolean()
+        .optional()
+        .describe('Rank step-free / wheelchair-accessible places first'),
       limit: z
         .number()
         .int()
@@ -50,11 +67,13 @@ server.registerTool(
       language: z.string().optional().describe('Preferred language for names, e.g. "en"'),
     },
   },
-  async ({ query, radiusMeters, categories, limit, language }) => {
+  async ({ query, radiusMeters, categories, filters, accessible, limit, language }) => {
     try {
       const result = await findNearbyAmenities(query, {
         ...(radiusMeters ? { radiusMeters } : {}),
         ...(categories ? { categories } : {}),
+        ...(filters ? { filters } : {}),
+        ...(accessible ? { accessible } : {}),
         ...(limit ? { limit } : {}),
         ...(language ? { language } : {}),
       });

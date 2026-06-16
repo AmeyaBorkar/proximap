@@ -20,6 +20,12 @@ proximap near "Eiffel Tower, Paris" --radius 800 --limit 20
 # Filter by category, output JSON
 proximap near "MG Road, Bengaluru" --category healthcare --category food --json
 
+# Compose facets: a vegan place that does takeaway and accepts contactless
+proximap near "Kreuzberg, Berlin" -c food --filter diet=vegan --filter takeaway --filter payment=contactless
+
+# Accessibility-first: rank step-free / wheelchair-accessible places first
+proximap near "Bahnhofstrasse, Zürich" -c food --accessible
+
 # Works with coordinates too
 proximap near "48.8584,2.2945"
 

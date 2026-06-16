@@ -3,6 +3,7 @@ import {
   findNearbyAmenities,
   NominatimGeocoder,
   walkabilityScore,
+  type FacetFilters,
   type GeocodeOptions,
 } from '@proximap/core';
 import { Command } from 'commander';
@@ -13,6 +14,8 @@ const VERSION = '0.1.0';
 interface NearOptions {
   radius: string;
   category: string[];
+  filter: string[];
+  accessible?: boolean;
   limit: string;
   lang?: string;
   json?: boolean;
@@ -51,14 +54,70 @@ function parsePositiveInt(value: string, name: string): number {
   return parsed;
 }
 
+const FALSY = new Set(['no', 'false', '0', '']);
+
+/** Parse repeatable `--filter key=value` (or bare `key`) pairs into FacetFilters. */
+function parseFilters(pairs: string[]): FacetFilters {
+  const filters: FacetFilters = {};
+  const tags: Record<string, string | boolean> = {};
+  const push = (field: 'diet' | 'cuisine' | 'payment', value: string): void => {
+    if (!value) return;
+    const existing = filters[field];
+    filters[field] = existing
+      ? [...(Array.isArray(existing) ? existing : [existing]), value]
+      : value;
+  };
+
+  for (const pair of pairs) {
+    const eq = pair.indexOf('=');
+    const key = (eq === -1 ? pair : pair.slice(0, eq)).trim().toLowerCase();
+    const raw = eq === -1 ? '' : pair.slice(eq + 1).trim();
+    const bool = eq === -1 ? true : !FALSY.has(raw.toLowerCase());
+
+    switch (key) {
+      case 'diet':
+      case 'cuisine':
+      case 'payment':
+        push(key, raw);
+        break;
+      case 'wheelchair':
+        filters.wheelchair = raw || 'yes';
+        break;
+      case 'wifi':
+      case 'internet':
+      case 'internet_access':
+        filters.internetAccess = bool;
+        break;
+      case 'takeaway':
+        filters.takeaway = bool;
+        break;
+      case 'delivery':
+        filters.delivery = bool;
+        break;
+      case 'outdoor':
+      case 'outdoor_seating':
+        filters.outdoorSeating = bool;
+        break;
+      default:
+        tags[key] = eq === -1 ? true : raw;
+        break;
+    }
+  }
+  if (Object.keys(tags).length > 0) filters.tags = tags;
+  return filters;
+}
+
 async function runNear(query: string, options: NearOptions): Promise<void> {
   const radiusMeters = parsePositiveInt(options.radius, 'radius');
   const limit = parsePositiveInt(options.limit, 'limit');
 
+  const filters = parseFilters(options.filter);
   const result = await findNearbyAmenities(query, {
     radiusMeters,
     limit,
     ...(options.category.length > 0 ? { categories: options.category } : {}),
+    ...(Object.keys(filters).length > 0 ? { filters } : {}),
+    ...(options.accessible ? { accessible: true } : {}),
     ...(options.lang ? { language: options.lang } : {}),
   });
 
@@ -126,6 +185,13 @@ program
     collect,
     [],
   )
+  .option(
+    '-f, --filter <key=value>',
+    'facet filter, e.g. diet=vegan, payment=contactless, wifi (repeatable)',
+    collect,
+    [],
+  )
+  .option('--accessible', 'rank step-free / wheelchair-accessible places first')
   .option('-n, --limit <count>', 'maximum number of results', '20')
   .option('--lang <code>', 'preferred language for place names (e.g. en)')
   .option('--json', 'output raw JSON instead of a list')
