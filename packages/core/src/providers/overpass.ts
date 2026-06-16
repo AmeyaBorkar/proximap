@@ -1,5 +1,11 @@
 import { categorize } from '../categories';
-import { DEFAULT_USER_AGENT, requestJson } from '../http';
+import {
+  DEFAULT_USER_AGENT,
+  HttpError,
+  RateLimiter,
+  requestJson,
+  type RequestCache,
+} from '../http';
 import { completenessOf, dedupePois, lastVerifiedOf } from '../quality';
 import { selectorToOverpassFilter } from '../taxonomy';
 import type { CategorySelector, LatLng, NearbyOptions, PlacesProvider, Poi } from '../types';
@@ -11,6 +17,12 @@ export interface OverpassOptions {
   userAgent?: string;
   /** Per-request timeout in milliseconds. */
   timeoutMs?: number;
+  /** Minimum spacing between requests in ms (default 1000). */
+  minIntervalMs?: number;
+  /** Retry attempts on transient failures (default 2). */
+  retries?: number;
+  /** Optional response cache (opt-in). */
+  cache?: RequestCache;
 }
 
 interface OverpassElement {
@@ -26,6 +38,8 @@ interface OverpassElement {
 
 interface OverpassResponse {
   elements?: OverpassElement[];
+  /** Present when Overpass reports a runtime error/timeout (often with HTTP 200). */
+  remark?: string;
 }
 
 /** Tag selectors fetched around the search center. Mirrors `categorize`. */
@@ -84,11 +98,17 @@ export class OverpassPlacesProvider implements PlacesProvider {
   private readonly endpoint: string;
   private readonly userAgent: string;
   private readonly timeoutMs: number;
+  private readonly retries: number;
+  private readonly cache: RequestCache | undefined;
+  private readonly limiter: RateLimiter;
 
   constructor(options: OverpassOptions = {}) {
     this.endpoint = options.endpoint ?? 'https://overpass-api.de/api/interpreter';
     this.userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
     this.timeoutMs = options.timeoutMs ?? 30_000;
+    this.retries = options.retries ?? 2;
+    this.cache = options.cache;
+    this.limiter = new RateLimiter(options.minIntervalMs ?? 1000);
   }
 
   async findNearby(center: LatLng, options: NearbyOptions): Promise<Poi[]> {
@@ -96,6 +116,7 @@ export class OverpassPlacesProvider implements PlacesProvider {
       options.selectors && options.selectors.length > 0
         ? buildTargetedOverpassQuery(center, options.radiusMeters, options.selectors)
         : buildOverpassQuery(center, options.radiusMeters);
+    await this.limiter.acquire();
     const data = await requestJson<OverpassResponse>(this.endpoint, {
       method: 'POST',
       headers: {
@@ -104,8 +125,14 @@ export class OverpassPlacesProvider implements PlacesProvider {
       },
       body: `data=${encodeURIComponent(query)}`,
       timeoutMs: this.timeoutMs,
+      retries: this.retries,
+      ...(this.cache ? { cache: this.cache } : {}),
       ...(options.signal ? { signal: options.signal } : {}),
     });
+
+    if (data.remark && /error|timed out|rate_limited|too many|memory/i.test(data.remark)) {
+      throw new HttpError(0, this.endpoint, `Overpass: ${data.remark}`);
+    }
 
     const wanted = options.categories ? new Set(options.categories) : null;
     const pois: Poi[] = [];

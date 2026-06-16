@@ -1,4 +1,4 @@
-import { DEFAULT_USER_AGENT, requestJson } from '../http';
+import { DEFAULT_USER_AGENT, RateLimiter, requestJson, type RequestCache } from '../http';
 import type { GeocodeOptions, GeocodingProvider, LatLng, Place } from '../types';
 
 export interface NominatimOptions {
@@ -8,6 +8,12 @@ export interface NominatimOptions {
   userAgent?: string;
   /** Per-request timeout in milliseconds. */
   timeoutMs?: number;
+  /** Minimum spacing between requests in ms (default 1000, per OSM policy). */
+  minIntervalMs?: number;
+  /** Retry attempts on transient failures (default 2). */
+  retries?: number;
+  /** Optional response cache (opt-in). */
+  cache?: RequestCache;
 }
 
 interface NominatimResult {
@@ -32,11 +38,17 @@ export class NominatimGeocoder implements GeocodingProvider {
   private readonly endpoint: string;
   private readonly userAgent: string;
   private readonly timeoutMs: number | undefined;
+  private readonly retries: number;
+  private readonly cache: RequestCache | undefined;
+  private readonly limiter: RateLimiter;
 
   constructor(options: NominatimOptions = {}) {
     this.endpoint = (options.endpoint ?? 'https://nominatim.openstreetmap.org').replace(/\/+$/, '');
     this.userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
     this.timeoutMs = options.timeoutMs;
+    this.retries = options.retries ?? 2;
+    this.cache = options.cache;
+    this.limiter = new RateLimiter(options.minIntervalMs ?? 1000);
   }
 
   async geocode(query: string, options: GeocodeOptions = {}): Promise<Place[]> {
@@ -65,9 +77,12 @@ export class NominatimGeocoder implements GeocodingProvider {
     return this.toPlace(result);
   }
 
-  private request<T>(path: string, signal: AbortSignal | undefined): Promise<T> {
+  private async request<T>(path: string, signal: AbortSignal | undefined): Promise<T> {
+    await this.limiter.acquire();
     return requestJson<T>(`${this.endpoint}${path}`, {
       headers: { 'User-Agent': this.userAgent },
+      retries: this.retries,
+      ...(this.cache ? { cache: this.cache } : {}),
       ...(signal ? { signal } : {}),
       ...(this.timeoutMs ? { timeoutMs: this.timeoutMs } : {}),
     });

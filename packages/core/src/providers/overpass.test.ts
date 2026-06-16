@@ -92,6 +92,13 @@ describe('OverpassPlacesProvider', () => {
     expect(pois[0]!.lastVerified).toBeDefined();
   });
 
+  it('throws when Overpass reports a remark error', async () => {
+    stubFetch({ remark: 'runtime error: Query timed out' });
+    await expect(
+      new OverpassPlacesProvider().findNearby({ lat: 0, lng: 0 }, { radiusMeters: 100 }),
+    ).rejects.toThrow(/Overpass/);
+  });
+
   it('POSTs the encoded query in the request body', async () => {
     const fetchMock = stubFetch(ELEMENTS);
     await new OverpassPlacesProvider().findNearby({ lat: 1, lng: 2 }, { radiusMeters: 100 });
