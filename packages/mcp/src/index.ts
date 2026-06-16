@@ -6,6 +6,7 @@ import {
   detectGaps,
   findNearbyAmenities,
   NominatimGeocoder,
+  ValhallaRoutingProvider,
   walkabilityScore,
 } from '@proximap/core';
 import { z } from 'zod';
@@ -72,6 +73,14 @@ server.registerTool(
           'Keep only places open at this time: "now", or an ISO datetime like ' +
             '"2026-06-20T21:00". Unknown-hours places are kept and labelled.',
         ),
+      rankBy: z
+        .enum(['distance', 'travelTime'])
+        .optional()
+        .describe('Order by straight-line distance (default) or road-network travel time'),
+      mode: z
+        .enum(['walk', 'bike', 'drive'])
+        .optional()
+        .describe('Travel mode for rankBy=travelTime (default walk)'),
       limit: z
         .number()
         .int()
@@ -81,7 +90,18 @@ server.registerTool(
       language: z.string().optional().describe('Preferred language for names, e.g. "en"'),
     },
   },
-  async ({ query, radiusMeters, categories, filters, accessible, open, limit, language }) => {
+  async ({
+    query,
+    radiusMeters,
+    categories,
+    filters,
+    accessible,
+    open,
+    rankBy,
+    mode,
+    limit,
+    language,
+  }) => {
     try {
       const openOption = open === 'now' ? 'now' : open ? { at: open } : undefined;
       const result = await findNearbyAmenities(query, {
@@ -90,6 +110,14 @@ server.registerTool(
         ...(filters ? { filters } : {}),
         ...(accessible ? { accessible } : {}),
         ...(openOption ? { open: openOption } : {}),
+        // Travel-time ranking uses the key-free public Valhalla engine.
+        ...(rankBy === 'travelTime'
+          ? {
+              rankBy: 'travelTime' as const,
+              routing: new ValhallaRoutingProvider(),
+              ...(mode ? { mode } : {}),
+            }
+          : {}),
         ...(limit ? { limit } : {}),
         ...(language ? { language } : {}),
       });

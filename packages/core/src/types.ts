@@ -98,6 +98,10 @@ export interface RankedPoi extends Poi {
   openState?: OpenState;
   /** ISO 8601 timestamp of the next open/closed transition, when computable. */
   nextChange?: string;
+  /** Travel duration from the origin in seconds — set only when ranking by travel time. */
+  travelSeconds?: number;
+  /** Travel distance from the origin in metres — set only when ranking by travel time. */
+  travelMeters?: number;
 }
 
 /** Options for a geocoding lookup. */

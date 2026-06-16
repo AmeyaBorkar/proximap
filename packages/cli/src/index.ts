@@ -6,9 +6,11 @@ import {
   ODBL_ATTRIBUTION,
   toCSV,
   toGeoJSON,
+  ValhallaRoutingProvider,
   walkabilityScore,
   type CategoryWeight,
   type FacetFilters,
+  type TravelMode,
   type GeocodeOptions,
 } from '@proximap/core';
 import { Command } from 'commander';
@@ -23,6 +25,8 @@ interface NearOptions {
   accessible?: boolean;
   openNow?: boolean;
   openAt?: string;
+  by?: string;
+  mode: string;
   limit: string;
   lang?: string;
   json?: boolean;
@@ -71,6 +75,24 @@ function parsePositiveInt(value: string, name: string): number {
 }
 
 const FALSY = new Set(['no', 'false', '0', '']);
+
+const MODE_ALIASES: Record<string, TravelMode> = {
+  walk: 'walk',
+  walking: 'walk',
+  foot: 'walk',
+  bike: 'bike',
+  cycling: 'bike',
+  bicycle: 'bike',
+  drive: 'drive',
+  driving: 'drive',
+  car: 'drive',
+};
+
+function parseMode(value: string): TravelMode {
+  const mode = MODE_ALIASES[value.trim().toLowerCase()];
+  if (!mode) throw new Error(`--mode must be walk, bike, or drive (got "${value}")`);
+  return mode;
+}
 
 /** Parse repeatable `--filter key=value` (or bare `key`) pairs into FacetFilters. */
 function parseFilters(pairs: string[]): FacetFilters {
@@ -129,6 +151,7 @@ async function runNear(query: string, options: NearOptions): Promise<void> {
 
   const filters = parseFilters(options.filter);
   const open = options.openAt ? { at: options.openAt } : options.openNow ? 'now' : undefined;
+  const byTravelTime = options.by !== undefined && /time/i.test(options.by);
   const result = await findNearbyAmenities(query, {
     radiusMeters,
     limit,
@@ -136,6 +159,15 @@ async function runNear(query: string, options: NearOptions): Promise<void> {
     ...(Object.keys(filters).length > 0 ? { filters } : {}),
     ...(options.accessible ? { accessible: true } : {}),
     ...(open ? { open } : {}),
+    // Use the key-free public Valhalla engine for real road-network times; core
+    // falls back to straight-line estimates if it is unavailable.
+    ...(byTravelTime
+      ? {
+          rankBy: 'travelTime' as const,
+          mode: parseMode(options.mode),
+          routing: new ValhallaRoutingProvider(),
+        }
+      : {}),
     ...(options.lang ? { language: options.lang } : {}),
   });
 
@@ -255,6 +287,8 @@ program
   .option('--accessible', 'rank step-free / wheelchair-accessible places first')
   .option('--open-now', 'keep only places open right now (unknown hours kept, labelled)')
   .option('--open-at <when>', 'keep only places open at an ISO time, e.g. 2026-06-20T21:00')
+  .option('--by <metric>', 'rank by distance (default) or travel-time')
+  .option('--mode <mode>', 'travel mode for --by travel-time: walk, bike, drive', 'walk')
   .option('-n, --limit <count>', 'maximum number of results', '20')
   .option('--lang <code>', 'preferred language for place names (e.g. en)')
   .option('--json', 'output raw JSON instead of a list')

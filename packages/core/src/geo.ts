@@ -29,6 +29,16 @@ export function formatDistance(meters: number): string {
   return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
 }
 
+/** Format a second duration as a compact human string ("8 min", "1 h 5 min"). */
+export function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '—';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder === 0 ? `${hours} h` : `${hours} h ${remainder} min`;
+}
+
 /**
  * Parse a "lat,lng" string (decimal degrees) into a {@link LatLng}, or return
  * null when the input is not a valid, in-range coordinate pair.

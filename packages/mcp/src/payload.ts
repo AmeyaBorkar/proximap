@@ -8,7 +8,7 @@ import type {
 
 /** Flatten a nearby-search result into a compact, agent-friendly object. */
 export function toNearbyPayload(result: NearbyResult) {
-  const { origin, results, total } = result;
+  const { origin, results, total, routing } = result;
   return {
     origin: {
       name: origin.name,
@@ -18,12 +18,15 @@ export function toNearbyPayload(result: NearbyResult) {
     },
     total,
     count: results.length,
+    routing: routing ?? null,
     results: results.map((poi) => ({
       rank: poi.rank,
       name: poi.name ?? null,
       category: poi.category,
       kind: poi.kind ?? null,
       distanceMeters: Math.round(poi.distanceMeters),
+      travelSeconds: poi.travelSeconds ?? null,
+      travelMeters: poi.travelMeters ?? null,
       lat: poi.location.lat,
       lng: poi.location.lng,
       osmId: poi.id,

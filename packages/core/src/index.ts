@@ -17,6 +17,7 @@ export * from './hours';
 export * from './http';
 export * from './providers';
 export * from './ranking';
+export * from './routing';
 export * from './filters';
 export * from './origin';
 export * from './proximity';

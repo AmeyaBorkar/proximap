@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findNearbyAmenities } from './nearby';
+import type { RoutingProvider } from './routing';
 import type { GeocodingProvider, PlacesProvider, Poi } from './types';
 
 const geocoder: GeocodingProvider = {
@@ -161,6 +162,48 @@ const withHours: PlacesProvider = {
     return pois;
   },
 };
+
+describe('findNearbyAmenities — travel-time ranking', () => {
+  // Candidates arrive nearest-first; give the nearest the longest time so a
+  // correct travel-time sort reverses the straight-line order.
+  const reverseRouter: RoutingProvider = {
+    name: 'reverse',
+    async matrix(_origin, targets) {
+      return targets.map((_t, index) => ({ seconds: (targets.length - index) * 60, meters: 100 }));
+    },
+  };
+
+  it('reorders results by travel time and annotates each result', async () => {
+    const { results, routing } = await findNearbyAmenities('somewhere', {
+      geocoder,
+      places, // node/1 is nearer than node/2
+      rankBy: 'travelTime',
+      routing: reverseRouter,
+    });
+    expect(results.map((r) => r.id)).toEqual(['node/2', 'node/1']); // reversed vs distance
+    expect(results[0]!.travelSeconds).toBe(60);
+    expect(results[0]!.rank).toBe(1);
+    expect(routing).toEqual({ provider: 'reverse', mode: 'walk', fellBack: false });
+  });
+
+  it('falls back to haversine when the routing engine errors', async () => {
+    const broken: RoutingProvider = {
+      name: 'broken',
+      async matrix() {
+        throw new Error('engine down');
+      },
+    };
+    const { results, routing } = await findNearbyAmenities('somewhere', {
+      geocoder,
+      places,
+      rankBy: 'travelTime',
+      mode: 'bike',
+      routing: broken,
+    });
+    expect(routing).toEqual({ provider: 'haversine', mode: 'bike', fellBack: true });
+    expect(results[0]!.travelSeconds).toBeGreaterThan(0); // haversine still produced times
+  });
+});
 
 describe('findNearbyAmenities — open-now / open-at', () => {
   // 2026-01-05 is a Monday; 10:00 falls inside 09:00-17:00.

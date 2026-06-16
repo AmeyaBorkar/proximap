@@ -1,9 +1,16 @@
 import { accessibleScorer, compileFacets, matchesFacets, type FacetFilters } from './filters';
+import { haversineMeters } from './geo';
 import { isOpenAt, type OpeningEvaluation } from './hours';
 import { resolveOrigin } from './origin';
 import { NominatimGeocoder } from './providers/nominatim';
 import { OverpassPlacesProvider } from './providers/overpass';
 import { rankByProximity, type RankOptions } from './ranking';
+import {
+  HaversineRoutingProvider,
+  type RouteMetric,
+  type RoutingProvider,
+  type TravelMode,
+} from './routing';
 import { resolveCategories, suggestCategories, tagsMatchAnySelector } from './taxonomy';
 import type {
   Category,
@@ -13,6 +20,7 @@ import type {
   NearbyOptions,
   Place,
   PlacesProvider,
+  Poi,
   RankedPoi,
 } from './types';
 
@@ -53,6 +61,19 @@ export interface FindNearbyOptions {
    * removed. Times are read as the POI's local wall-clock (see {@link isOpenAt}).
    */
   open?: 'now' | { at: string | Date };
+  /**
+   * Order results by straight-line `'distance'` (default) or by `'travelTime'`.
+   * Travel-time ranking attaches `travelSeconds`/`travelMeters` to each result.
+   */
+  rankBy?: 'distance' | 'travelTime';
+  /** Travel mode for `rankBy: 'travelTime'` (default `'walk'`). */
+  mode?: TravelMode;
+  /**
+   * Routing engine for travel-time ranking (default: {@link HaversineRoutingProvider},
+   * key-free straight-line estimates). Pass a real engine for road-network times;
+   * if it errors, ranking falls back to haversine and `result.routing.fellBack` is set.
+   */
+  routing?: RoutingProvider;
   /** Ranking tweaks (category weights or a custom scorer). */
   rank?: RankOptions;
   signal?: AbortSignal;
@@ -63,6 +84,8 @@ export interface NearbyResult {
   results: RankedPoi[];
   /** Number of POIs found before `limit` was applied. */
   total: number;
+  /** Set when `rankBy: 'travelTime'` was used: which engine answered, and the mode. */
+  routing?: { provider: string; mode: TravelMode; fellBack: boolean };
 }
 
 const DEFAULT_RADIUS_M = 1000;
@@ -114,10 +137,22 @@ export async function findNearbyAmenities(
     });
   }
 
-  const rankOptions: RankOptions = { radiusMeters, ...options.rank };
-  if (options.accessible && !rankOptions.scoreFn) rankOptions.scoreFn = accessibleScorer();
+  let ranked: RankedPoi[];
+  let routingInfo: NearbyResult['routing'];
+  if (options.rankBy === 'travelTime') {
+    const outcome = await rankByTravelTime(origin.location, pois, {
+      mode: options.mode ?? 'walk',
+      routing: options.routing ?? new HaversineRoutingProvider(),
+      ...(options.signal ? { signal: options.signal } : {}),
+    });
+    ranked = outcome.ranked;
+    routingInfo = outcome.info;
+  } else {
+    const rankOptions: RankOptions = { radiusMeters, ...options.rank };
+    if (options.accessible && !rankOptions.scoreFn) rankOptions.scoreFn = accessibleScorer();
+    ranked = rankByProximity(origin.location, pois, rankOptions);
+  }
 
-  let ranked = rankByProximity(origin.location, pois, rankOptions);
   if (openEval) {
     ranked = ranked.map((poi) => {
       const evaluation = openEval!.get(poi.id);
@@ -130,7 +165,62 @@ export async function findNearbyAmenities(
 
   const limit = options.limit ?? DEFAULT_LIMIT;
   const results = limit > 0 ? ranked.slice(0, limit) : ranked;
-  return { origin, results, total: ranked.length };
+  return {
+    origin,
+    results,
+    total: ranked.length,
+    ...(routingInfo ? { routing: routingInfo } : {}),
+  };
+}
+
+/** Cap on candidates sent to a routing matrix — bounds cost and public-engine limits. */
+const TRAVEL_MATRIX_CAP = 80;
+
+/**
+ * Rank POIs by travel duration. Trims to the nearest {@link TRAVEL_MATRIX_CAP}
+ * candidates by straight-line distance first (to bound matrix size), then orders
+ * by the routing engine's durations — falling back to haversine if it errors.
+ */
+async function rankByTravelTime(
+  origin: LatLng,
+  pois: Poi[],
+  options: { mode: TravelMode; routing: RoutingProvider; signal?: AbortSignal },
+): Promise<{ ranked: RankedPoi[]; info: NonNullable<NearbyResult['routing']> }> {
+  const candidates = [...pois]
+    .sort((a, b) => haversineMeters(origin, a.location) - haversineMeters(origin, b.location))
+    .slice(0, TRAVEL_MATRIX_CAP);
+  const points = candidates.map((poi) => poi.location);
+  const requestOptions = options.signal ? { signal: options.signal } : {};
+
+  let metrics: (RouteMetric | null)[];
+  let provider = options.routing.name;
+  let fellBack = false;
+  try {
+    metrics = await options.routing.matrix(origin, points, options.mode, requestOptions);
+  } catch (error) {
+    if (options.routing instanceof HaversineRoutingProvider) throw error;
+    const fallback = new HaversineRoutingProvider();
+    metrics = await fallback.matrix(origin, points, options.mode);
+    provider = fallback.name;
+    fellBack = true;
+  }
+
+  const reachable = candidates
+    .map((poi, index) => ({ poi, metric: metrics[index] ?? null }))
+    .filter((entry): entry is { poi: Poi; metric: RouteMetric } => entry.metric !== null)
+    .sort((a, b) => a.metric.seconds - b.metric.seconds);
+
+  const slowest = reachable.reduce((max, entry) => Math.max(max, entry.metric.seconds), 0) || 1;
+  const ranked: RankedPoi[] = reachable.map((entry, index) => ({
+    ...entry.poi,
+    distanceMeters: haversineMeters(origin, entry.poi.location),
+    score: Math.round((1 - entry.metric.seconds / slowest) * 100) / 100,
+    rank: index + 1,
+    travelSeconds: entry.metric.seconds,
+    travelMeters: entry.metric.meters,
+  }));
+
+  return { ranked, info: { provider, mode: options.mode, fellBack } };
 }
 
 /** Resolve requested category terms to selectors, throwing on unknown terms. */
