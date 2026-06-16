@@ -5,9 +5,10 @@ import {
   detectGaps,
   findNearbyAmenities,
   NominatimGeocoder,
+  walkabilityScore,
 } from '@proximap/core';
 import { z } from 'zod';
-import { toGapsPayload, toGeocodePayload, toNearbyPayload } from './payload';
+import { toGapsPayload, toGeocodePayload, toNearbyPayload, toScorePayload } from './payload';
 
 const VERSION = '0.1.0';
 
@@ -137,6 +138,46 @@ server.registerTool(
         ...(language ? { language } : {}),
       });
       return jsonResult(toGapsPayload(report));
+    } catch (error) {
+      return errorResult(error);
+    }
+  },
+);
+
+server.registerTool(
+  'walkability_score',
+  {
+    title: 'Walkability score',
+    description:
+      'Rate how walkable / well-served a location is on a 0-100 scale, with a transparent ' +
+      'per-category breakdown (nearest distance + sub-score), the categories missing nearby, ' +
+      'and a confidence note reflecting OSM data density. An open, tunable alternative to ' +
+      'proprietary walkability indices.',
+    inputSchema: {
+      query: z.string().describe('Place name, address, or "lat,lng" coordinates'),
+      idealMeters: z
+        .number()
+        .positive()
+        .optional()
+        .describe('Distance still scoring full marks, ≈5-min walk (default 400)'),
+      maxMeters: z
+        .number()
+        .positive()
+        .optional()
+        .describe('Distance scoring zero, ≈30-min walk (default 2400)'),
+      language: z.string().optional().describe('Preferred language for names'),
+    },
+  },
+  async ({ query, idealMeters, maxMeters, language }) => {
+    try {
+      const decay: { idealMeters?: number; maxMeters?: number } = {};
+      if (idealMeters) decay.idealMeters = idealMeters;
+      if (maxMeters) decay.maxMeters = maxMeters;
+      const report = await walkabilityScore(query, {
+        ...(Object.keys(decay).length > 0 ? { decay } : {}),
+        ...(language ? { language } : {}),
+      });
+      return jsonResult(toScorePayload(report));
     } catch (error) {
       return errorResult(error);
     }

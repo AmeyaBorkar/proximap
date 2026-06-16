@@ -42,9 +42,24 @@ const myProvider: PlacesProvider = {
 await findNearbyAmenities('Tokyo Station', { places: myProvider });
 ```
 
+### Beyond "what's nearby"
+
+```ts
+import { detectGaps, walkabilityScore } from '@proximap/core';
+
+// What everyday amenities are missing? (absence framed as "not found in OSM")
+const report = await detectGaps('Brandenburg Gate, Berlin', { thresholdMeters: 1000 });
+console.log(report.missing); // e.g. ['grocery']
+
+// How walkable is it? 0-100 with a transparent, tunable breakdown.
+const walk = await walkabilityScore('Brandenburg Gate, Berlin');
+console.log(walk.score, walk.confidence, walk.breakdown);
+```
+
 Also exported: `NominatimGeocoder`, `OverpassPlacesProvider`, `rankByProximity`,
-`categorize`, `haversineMeters`, `formatDistance`, `CATEGORIES`, and the domain
-types. See the [main README](https://github.com/AmeyaBorkar/proximap#readme).
+`nearestMatchingPoi`, `categorize`, `haversineMeters`, `formatDistance`,
+`CATEGORIES`, and the domain types. See the
+[main README](https://github.com/AmeyaBorkar/proximap#readme).
 
 ## License
 

@@ -2,10 +2,11 @@ import {
   detectGaps,
   findNearbyAmenities,
   NominatimGeocoder,
+  walkabilityScore,
   type GeocodeOptions,
 } from '@proximap/core';
 import { Command } from 'commander';
-import { renderGaps, renderGeocode, renderNearby } from './render';
+import { renderGaps, renderGeocode, renderNearby, renderScore } from './render';
 
 const VERSION = '0.1.0';
 
@@ -27,6 +28,13 @@ interface GapsCommandOptions {
   category: string[];
   radius: string;
   threshold: string;
+  lang?: string;
+  json?: boolean;
+}
+
+interface ScoreCommandOptions {
+  ideal: string;
+  max: string;
   lang?: string;
   json?: boolean;
 }
@@ -77,6 +85,20 @@ async function runGaps(query: string, options: GapsCommandOptions): Promise<void
     ...(options.lang ? { language: options.lang } : {}),
   });
   const output = options.json ? JSON.stringify(report, null, 2) : renderGaps(report);
+  process.stdout.write(`${output}\n`);
+}
+
+async function runScore(query: string, options: ScoreCommandOptions): Promise<void> {
+  const idealMeters = parsePositiveInt(options.ideal, 'ideal');
+  const maxMeters = parsePositiveInt(options.max, 'max');
+  if (maxMeters <= idealMeters) {
+    throw new Error('--max must be greater than --ideal');
+  }
+  const report = await walkabilityScore(query, {
+    decay: { idealMeters, maxMeters },
+    ...(options.lang ? { language: options.lang } : {}),
+  });
+  const output = options.json ? JSON.stringify(report, null, 2) : renderScore(report);
   process.stdout.write(`${output}\n`);
 }
 
@@ -135,5 +157,15 @@ program
   .option('--lang <code>', 'preferred language')
   .option('--json', 'output raw JSON')
   .action((parts: string[], options: GapsCommandOptions) => runGaps(parts.join(' '), options));
+
+program
+  .command('score')
+  .description('rate how walkable / well-served a place is (0-100, with a breakdown)')
+  .argument('<query...>', 'place name, address, or "lat,lng"')
+  .option('--ideal <meters>', 'distance that still scores full marks (≈5-min walk)', '400')
+  .option('--max <meters>', 'distance beyond which a category scores zero (≈30-min walk)', '2400')
+  .option('--lang <code>', 'preferred language')
+  .option('--json', 'output raw JSON')
+  .action((parts: string[], options: ScoreCommandOptions) => runScore(parts.join(' '), options));
 
 program.parseAsync().catch(fail);

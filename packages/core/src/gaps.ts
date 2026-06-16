@@ -1,17 +1,9 @@
-import { haversineMeters } from './geo';
 import { resolveOrigin } from './origin';
+import { nearestMatchingPoi } from './proximity';
 import { NominatimGeocoder } from './providers/nominatim';
 import { OverpassPlacesProvider } from './providers/overpass';
-import { resolveCategories, suggestCategories, tagsMatchAnySelector } from './taxonomy';
-import type {
-  CategorySelector,
-  GeocodingProvider,
-  LatLng,
-  NearbyOptions,
-  Place,
-  PlacesProvider,
-  Poi,
-} from './types';
+import { resolveCategories, suggestCategories } from './taxonomy';
+import type { GeocodingProvider, LatLng, NearbyOptions, Place, PlacesProvider } from './types';
 
 /** Everyday needs a well-served neighbourhood should provide nearby. */
 export const DEFAULT_DAILY_NEEDS = [
@@ -61,24 +53,6 @@ export interface GapReport {
 const DEFAULT_SEARCH_RADIUS_M = 5000;
 const DEFAULT_THRESHOLD_M = 1500;
 
-function nearestMatch(
-  origin: LatLng,
-  pois: Poi[],
-  selectors: CategorySelector[],
-): { meters: number | null; poi: Poi | null } {
-  let bestMeters: number | null = null;
-  let bestPoi: Poi | null = null;
-  for (const poi of pois) {
-    if (!tagsMatchAnySelector(poi.tags, selectors)) continue;
-    const meters = haversineMeters(origin, poi.location);
-    if (bestMeters === null || meters < bestMeters) {
-      bestMeters = meters;
-      bestPoi = poi;
-    }
-  }
-  return { meters: bestMeters, poi: bestPoi };
-}
-
 /**
  * Report which everyday amenities are missing or far from a location — the
  * inverse of "what's nearby". Because OSM under-maps some areas, absence is
@@ -125,7 +99,7 @@ export async function detectGaps(
 
   const gaps: CategoryGap[] = terms.map((term) => {
     const selectors = resolveCategories([term]).selectors;
-    const { meters, poi } = nearestMatch(origin.location, pois, selectors);
+    const { meters, poi } = nearestMatchingPoi(origin.location, pois, selectors);
     const gap: CategoryGap = {
       category: term,
       nearestMeters: meters === null ? null : Math.round(meters),

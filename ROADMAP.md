@@ -19,13 +19,13 @@ not richer data — so we build what's underserved on open data and merely *cons
 commodities like routing/isochrones. Full designs live in
 [`docs/proposals/`](docs/proposals/README.md).
 
-### P0 — foundation (unlocks the rest)
+### P0 — foundation (unlocks the rest) — ✅ shipped
 
-- [ ] [Natural-language category resolver](docs/proposals/01-nl-category-resolver.md)
+- [x] [Natural-language category resolver](docs/proposals/01-nl-category-resolver.md)
       — "coffee" → the right OSM tag union (no JS/Python lib does this)
-- [ ] [POI dedup, centroids & quality signals](docs/proposals/02-poi-dedup-and-quality.md)
+- [x] [POI dedup, centroids & quality signals](docs/proposals/02-poi-dedup-and-quality.md)
       — collapse node/way duplicates; add completeness + freshness
-- [ ] [Resilient, cached, policy-safe OSM client](docs/proposals/03-resilient-osm-client.md)
+- [x] [Resilient, cached, policy-safe OSM client](docs/proposals/03-resilient-osm-client.md)
       — rate limits, retries, caching, self-host/offline
 
 ### P1 — next milestone
@@ -35,10 +35,10 @@ commodities like routing/isochrones. Full designs live in
       — diet/payment/wifi + wheelchair/step-free ranking
 - [ ] [Travel-time ranking & isochrone reachability](docs/proposals/06-travel-time-and-isochrones.md)
       — pluggable OSRM/Valhalla/ORS, haversine fallback _(commodity, composed)_
-- [ ] [Transparent walkability / 15-minute score](docs/proposals/07-walkability-score.md)
-      — **signature/novel**: open, tunable alternative to Walk Score
-- [ ] [Amenity gap / "desert" detection](docs/proposals/08-amenity-gap-detection.md)
-      — **signature/novel**: report what's _missing_
+- [x] [Transparent walkability / 15-minute score](docs/proposals/07-walkability-score.md)
+      — **signature/novel**: open, tunable alternative to Walk Score (`score` / `walkability_score`)
+- [x] [Amenity gap / "desert" detection](docs/proposals/08-amenity-gap-detection.md)
+      — **signature/novel**: report what's _missing_ (`gaps` / `detect_amenity_gaps`)
 - [ ] [Agent-native outputs & disambiguation](docs/proposals/11-agent-native-outputs.md)
       — schema-stable output, concise mode, ambiguity as candidates
 

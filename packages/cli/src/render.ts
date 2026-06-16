@@ -4,6 +4,7 @@ import {
   type GapReport,
   type NearbyResult,
   type Place,
+  type WalkabilityReport,
 } from '@proximap/core';
 import pc from 'picocolors';
 
@@ -81,5 +82,47 @@ export function renderGaps(report: GapReport): string {
       ? pc.green('No gaps — all requested categories are nearby.')
       : pc.dim(`Missing (not found in OSM): ${missing.join(', ')}`),
   );
+  return lines.join('\n');
+}
+
+/** Render a walkability report: headline score, per-category breakdown, gaps. */
+export function renderScore(report: WalkabilityReport): string {
+  const { origin, score, confidence, breakdown, missing, decay } = report;
+  const lines: string[] = [
+    pc.bold(origin.displayName),
+    pc.dim(
+      `${coordString(origin.location.lat, origin.location.lng)} · ` +
+        `walkability ${pc.bold(String(score))}/100 · confidence ${Math.round(confidence * 100)}%`,
+    ),
+    pc.dim(
+      `full credit ≤ ${formatDistance(decay.idealMeters)}, none ≥ ${formatDistance(decay.maxMeters)}`,
+    ),
+    '',
+  ];
+
+  const nameWidth = Math.max(...breakdown.map((b) => titleCase(b.category).length));
+  for (const entry of breakdown) {
+    const mark =
+      entry.subScore >= 0.67 ? pc.green('✓') : entry.subScore > 0 ? pc.yellow('~') : pc.red('✗');
+    const name = titleCase(entry.category).padEnd(nameWidth);
+    const detail =
+      entry.nearestMeters === null
+        ? pc.dim('none in range')
+        : pc.dim(formatDistance(entry.nearestMeters));
+    const pct = pc.dim(`${Math.round(entry.subScore * 100)}%`.padStart(4));
+    lines.push(`${mark} ${name}  ${pct}  ${detail}`);
+  }
+
+  lines.push('');
+  lines.push(
+    missing.length === 0
+      ? pc.green('All daily needs reachable within range.')
+      : pc.dim(`Not found in OSM within range: ${missing.join(', ')}`),
+  );
+  if (confidence < 0.5) {
+    lines.push(
+      pc.yellow('Low confidence — OSM coverage here looks sparse; treat the score as a floor.'),
+    );
+  }
   return lines.join('\n');
 }

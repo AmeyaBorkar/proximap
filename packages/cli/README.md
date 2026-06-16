@@ -25,9 +25,15 @@ proximap near "48.8584,2.2945"
 
 # Resolve a place to coordinates
 proximap geocode "Sydney Opera House"
+
+# What everyday amenities are MISSING nearby? (framed as "not found in OSM")
+proximap gaps "Brandenburg Gate, Berlin" --radius 3000 --threshold 1000
+
+# How walkable / well-served is this address? (0-100, with a breakdown)
+proximap score "Brandenburg Gate, Berlin"
 ```
 
-Run `proximap --help` or `proximap near --help` for all options.
+Run `proximap --help` or `proximap <command> --help` for all options.
 
 ## License
 

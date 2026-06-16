@@ -1,6 +1,6 @@
 # 07 — Transparent walkability / 15-minute score
 
-- **Status:** Proposed · **Tier:** P1 (signature) · **Novelty:** Novel · **Complexity:** Med–High
+- **Status:** Implemented (v1; haversine distance, travel-time follow-up pending) · **Tier:** P1 (signature) · **Novelty:** Novel · **Complexity:** Med–High
 
 ## Problem
 

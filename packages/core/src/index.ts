@@ -17,5 +17,7 @@ export * from './http';
 export * from './providers';
 export * from './ranking';
 export * from './origin';
+export * from './proximity';
 export * from './nearby';
 export * from './gaps';
+export * from './walkability';

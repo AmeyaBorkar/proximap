@@ -1,4 +1,4 @@
-import type { GapReport, NearbyResult, Place } from '@proximap/core';
+import type { GapReport, NearbyResult, Place, WalkabilityReport } from '@proximap/core';
 
 /** Flatten a nearby-search result into a compact, agent-friendly object. */
 export function toNearbyPayload(result: NearbyResult) {
@@ -50,6 +50,23 @@ export function toGapsPayload(report: GapReport) {
     searchRadiusMeters: report.searchRadiusMeters,
     thresholdMeters: report.thresholdMeters,
     gaps: report.gaps,
+    missing: report.missing,
+  };
+}
+
+/** Flatten a walkability report for agent consumption. */
+export function toScorePayload(report: WalkabilityReport) {
+  return {
+    origin: {
+      name: report.origin.name,
+      displayName: report.origin.displayName,
+      lat: report.origin.location.lat,
+      lng: report.origin.location.lng,
+    },
+    score: report.score,
+    confidence: report.confidence,
+    decay: report.decay,
+    breakdown: report.breakdown,
     missing: report.missing,
   };
 }
