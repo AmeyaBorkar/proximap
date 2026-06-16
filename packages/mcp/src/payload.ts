@@ -1,4 +1,4 @@
-import type { NearbyResult, Place } from '@proximap/core';
+import type { GapReport, NearbyResult, Place } from '@proximap/core';
 
 /** Flatten a nearby-search result into a compact, agent-friendly object. */
 export function toNearbyPayload(result: NearbyResult) {
@@ -36,4 +36,20 @@ export function toGeocodePayload(places: Place[]) {
     lng: place.location.lng,
     kind: place.kind ?? null,
   }));
+}
+
+/** Flatten an amenity-gap report for agent consumption. */
+export function toGapsPayload(report: GapReport) {
+  return {
+    origin: {
+      name: report.origin.name,
+      displayName: report.origin.displayName,
+      lat: report.origin.location.lat,
+      lng: report.origin.location.lng,
+    },
+    searchRadiusMeters: report.searchRadiusMeters,
+    thresholdMeters: report.thresholdMeters,
+    gaps: report.gaps,
+    missing: report.missing,
+  };
 }

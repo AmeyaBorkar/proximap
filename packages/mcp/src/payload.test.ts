@@ -1,6 +1,6 @@
-import type { NearbyResult, Place } from '@proximap/core';
+import type { GapReport, NearbyResult, Place } from '@proximap/core';
 import { describe, expect, it } from 'vitest';
-import { toGeocodePayload, toNearbyPayload } from './payload';
+import { toGapsPayload, toGeocodePayload, toNearbyPayload } from './payload';
 
 describe('toNearbyPayload', () => {
   it('flattens the origin, rounds distances, and nulls missing fields', () => {
@@ -46,5 +46,21 @@ describe('toGeocodePayload', () => {
     expect(toGeocodePayload(places)).toEqual([
       { name: 'A', displayName: 'A, C', lat: 1, lng: 2, kind: null },
     ]);
+  });
+});
+
+describe('toGapsPayload', () => {
+  it('flattens the origin and passes through gaps and missing', () => {
+    const report: GapReport = {
+      origin: { name: 'O', displayName: 'O City', location: { lat: 1, lng: 2 }, source: 'test' },
+      searchRadiusMeters: 5000,
+      thresholdMeters: 1000,
+      gaps: [{ category: 'grocery', nearestMeters: 120, isGap: false }],
+      missing: [],
+    };
+    const payload = toGapsPayload(report);
+    expect(payload.origin).toEqual({ name: 'O', displayName: 'O City', lat: 1, lng: 2 });
+    expect(payload.missing).toEqual([]);
+    expect(payload.gaps[0]).toMatchObject({ category: 'grocery', isGap: false });
   });
 });

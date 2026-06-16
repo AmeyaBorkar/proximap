@@ -1,4 +1,10 @@
-import { CATEGORY_LABELS, formatDistance, type NearbyResult, type Place } from '@proximap/core';
+import {
+  CATEGORY_LABELS,
+  formatDistance,
+  type GapReport,
+  type NearbyResult,
+  type Place,
+} from '@proximap/core';
 import pc from 'picocolors';
 
 function coordString(lat: number, lng: number): string {
@@ -44,5 +50,36 @@ export function renderGeocode(places: Place[]): string {
     lines.push(`   ${pc.dim(place.displayName)}`);
     lines.push(`   ${pc.dim(coordString(place.location.lat, place.location.lng))}`);
   });
+  return lines.join('\n');
+}
+
+function titleCase(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/** Render an amenity-gap report as a checklist with distances. */
+export function renderGaps(report: GapReport): string {
+  const { origin, gaps, missing, searchRadiusMeters, thresholdMeters } = report;
+  const lines: string[] = [
+    pc.bold(origin.displayName),
+    pc.dim(
+      `${coordString(origin.location.lat, origin.location.lng)} · searched ${formatDistance(searchRadiusMeters)}, gap if > ${formatDistance(thresholdMeters)}`,
+    ),
+    '',
+  ];
+  for (const gap of gaps) {
+    const mark = gap.isGap ? pc.red('✗') : pc.green('✓');
+    const detail =
+      gap.nearestMeters === null
+        ? pc.dim(`none within ${formatDistance(searchRadiusMeters)}`)
+        : pc.dim(formatDistance(gap.nearestMeters));
+    lines.push(`${mark} ${titleCase(gap.category)}  ${detail}`);
+  }
+  lines.push('');
+  lines.push(
+    missing.length === 0
+      ? pc.green('No gaps — all requested categories are nearby.')
+      : pc.dim(`Missing (not found in OSM): ${missing.join(', ')}`),
+  );
   return lines.join('\n');
 }

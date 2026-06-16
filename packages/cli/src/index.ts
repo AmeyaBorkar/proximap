@@ -1,6 +1,11 @@
-import { findNearbyAmenities, NominatimGeocoder, type GeocodeOptions } from '@proximap/core';
+import {
+  detectGaps,
+  findNearbyAmenities,
+  NominatimGeocoder,
+  type GeocodeOptions,
+} from '@proximap/core';
 import { Command } from 'commander';
-import { renderGeocode, renderNearby } from './render';
+import { renderGaps, renderGeocode, renderNearby } from './render';
 
 const VERSION = '0.1.0';
 
@@ -14,6 +19,14 @@ interface NearOptions {
 
 interface GeocodeCommandOptions {
   limit: string;
+  lang?: string;
+  json?: boolean;
+}
+
+interface GapsCommandOptions {
+  category: string[];
+  radius: string;
+  threshold: string;
   lang?: string;
   json?: boolean;
 }
@@ -51,6 +64,19 @@ async function runGeocode(query: string, options: GeocodeCommandOptions): Promis
 
   const places = await new NominatimGeocoder().geocode(query, geocodeOptions);
   const output = options.json ? JSON.stringify(places, null, 2) : renderGeocode(places);
+  process.stdout.write(`${output}\n`);
+}
+
+async function runGaps(query: string, options: GapsCommandOptions): Promise<void> {
+  const searchRadiusMeters = parsePositiveInt(options.radius, 'radius');
+  const thresholdMeters = parsePositiveInt(options.threshold, 'threshold');
+  const report = await detectGaps(query, {
+    searchRadiusMeters,
+    thresholdMeters,
+    ...(options.category.length > 0 ? { categories: options.category } : {}),
+    ...(options.lang ? { language: options.lang } : {}),
+  });
+  const output = options.json ? JSON.stringify(report, null, 2) : renderGaps(report);
   process.stdout.write(`${output}\n`);
 }
 
@@ -93,5 +119,21 @@ program
   .action((parts: string[], options: GeocodeCommandOptions) =>
     runGeocode(parts.join(' '), options),
   );
+
+program
+  .command('gaps')
+  .description('report which everyday amenities are missing near a place')
+  .argument('<query...>', 'place name, address, or "lat,lng"')
+  .option(
+    '-c, --category <term>',
+    'category to check (repeatable; default: daily needs)',
+    collect,
+    [],
+  )
+  .option('-r, --radius <meters>', 'how far to search for the nearest match', '5000')
+  .option('-t, --threshold <meters>', 'distance beyond which a category is a gap', '1500')
+  .option('--lang <code>', 'preferred language')
+  .option('--json', 'output raw JSON')
+  .action((parts: string[], options: GapsCommandOptions) => runGaps(parts.join(' '), options));
 
 program.parseAsync().catch(fail);

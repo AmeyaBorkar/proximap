@@ -16,4 +16,6 @@ export * from './quality';
 export * from './http';
 export * from './providers';
 export * from './ranking';
+export * from './origin';
 export * from './nearby';
+export * from './gaps';

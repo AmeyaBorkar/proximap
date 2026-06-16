@@ -1,8 +1,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { categoryVocabulary, findNearbyAmenities, NominatimGeocoder } from '@proximap/core';
+import {
+  categoryVocabulary,
+  detectGaps,
+  findNearbyAmenities,
+  NominatimGeocoder,
+} from '@proximap/core';
 import { z } from 'zod';
-import { toGeocodePayload, toNearbyPayload } from './payload';
+import { toGapsPayload, toGeocodePayload, toNearbyPayload } from './payload';
 
 const VERSION = '0.1.0';
 
@@ -95,6 +100,47 @@ server.registerTool(
     inputSchema: {},
   },
   async () => jsonResult(categoryVocabulary()),
+);
+
+server.registerTool(
+  'detect_amenity_gaps',
+  {
+    title: 'Detect amenity gaps',
+    description:
+      'Report which everyday amenities are missing or far from a place — a "what is absent" check. ' +
+      'Absence is framed as "not found in OSM within the threshold", not asserted as ground truth.',
+    inputSchema: {
+      query: z.string().describe('Place name, address, or "lat,lng" coordinates'),
+      categories: z
+        .array(z.string())
+        .optional()
+        .describe('Category terms to check (defaults to everyday needs)'),
+      searchRadiusMeters: z
+        .number()
+        .positive()
+        .optional()
+        .describe('How far to search for the nearest match (default 5000)'),
+      thresholdMeters: z
+        .number()
+        .positive()
+        .optional()
+        .describe('Distance beyond which a category is a gap (default 1500)'),
+      language: z.string().optional().describe('Preferred language for names'),
+    },
+  },
+  async ({ query, categories, searchRadiusMeters, thresholdMeters, language }) => {
+    try {
+      const report = await detectGaps(query, {
+        ...(categories ? { categories } : {}),
+        ...(searchRadiusMeters ? { searchRadiusMeters } : {}),
+        ...(thresholdMeters ? { thresholdMeters } : {}),
+        ...(language ? { language } : {}),
+      });
+      return jsonResult(toGapsPayload(report));
+    } catch (error) {
+      return errorResult(error);
+    }
+  },
 );
 
 const transport = new StdioServerTransport();

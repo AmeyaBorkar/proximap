@@ -1,6 +1,6 @@
-import type { NearbyResult, Place } from '@proximap/core';
+import type { GapReport, NearbyResult, Place } from '@proximap/core';
 import { describe, expect, it } from 'vitest';
-import { renderGeocode, renderNearby } from './render';
+import { renderGaps, renderGeocode, renderNearby } from './render';
 
 const result: NearbyResult = {
   origin: {
@@ -70,5 +70,26 @@ describe('renderGeocode', () => {
 
   it('reports when there are no matches', () => {
     expect(renderGeocode([])).toBe('No matches found.');
+  });
+});
+
+describe('renderGaps', () => {
+  it('shows a checklist with marks, distances, and the missing list', () => {
+    const report: GapReport = {
+      origin: { name: 'O', displayName: 'O City', location: { lat: 1, lng: 2 }, source: 'test' },
+      searchRadiusMeters: 5000,
+      thresholdMeters: 1000,
+      gaps: [
+        { category: 'grocery', nearestMeters: 120, isGap: false },
+        { category: 'pharmacy', nearestMeters: null, isGap: true },
+      ],
+      missing: ['pharmacy'],
+    };
+    const out = renderGaps(report);
+    expect(out).toContain('Grocery');
+    expect(out).toContain('120 m');
+    expect(out).toContain('Pharmacy');
+    expect(out).toContain('none within');
+    expect(out).toContain('Missing (not found in OSM): pharmacy');
   });
 });
