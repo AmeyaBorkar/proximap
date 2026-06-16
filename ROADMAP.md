@@ -13,22 +13,58 @@ geospatial toolkit. Ordering is indicative, not a commitment.
 - [x] MCP server: `find_nearby_amenities`, `geocode`
 - [x] Dependency-free core, dual ESM/CJS build, CI on Node 20 & 24
 
-## Next
+The next features come out of a competitive-research pass (2026-06). The guiding
+finding: proximap's edge is **openness + composition + agent-native delivery**,
+not richer data — so we build what's underserved on open data and merely *consume*
+commodities like routing/isochrones. Full designs live in
+[`docs/proposals/`](docs/proposals/README.md).
 
-- [ ] **Travel-time ranking** — walking/driving/cycling distance & duration via
-      OSRM (rank by minutes, not just metres)
-- [ ] **Isochrones** — "what's reachable within N minutes"
-- [ ] **Neighbourhood score** — amenity coverage by category for a location
-- [ ] **Compare locations** — score two addresses by access to amenities
-- [ ] **Reverse-geocode** CLI command; `--sort` / `--group-by-category` output
-- [ ] **Export** — GeoJSON and CSV
-- [ ] **Caching + polite rate limiting** for the OSM endpoints
+### P0 — foundation (unlocks the rest)
 
-## Later
+- [ ] [Natural-language category resolver](docs/proposals/01-nl-category-resolver.md)
+      — "coffee" → the right OSM tag union (no JS/Python lib does this)
+- [ ] [POI dedup, centroids & quality signals](docs/proposals/02-poi-dedup-and-quality.md)
+      — collapse node/way duplicates; add completeness + freshness
+- [ ] [Resilient, cached, policy-safe OSM client](docs/proposals/03-resilient-osm-client.md)
+      — rate limits, retries, caching, self-host/offline
 
-- [ ] **More providers** (bring-your-own-key): Google Places, Mapbox, Foursquare
-- [ ] **Python port → PyPI** (`pip install proximap`); the name is reserved
+### P1 — next milestone
+
+- [ ] [Open-now / open-at](docs/proposals/04-open-now.md) — query by `opening_hours`
+- [ ] [Facet filters + accessibility-first search](docs/proposals/05-facets-and-accessibility.md)
+      — diet/payment/wifi + wheelchair/step-free ranking
+- [ ] [Travel-time ranking & isochrone reachability](docs/proposals/06-travel-time-and-isochrones.md)
+      — pluggable OSRM/Valhalla/ORS, haversine fallback _(commodity, composed)_
+- [ ] [Transparent walkability / 15-minute score](docs/proposals/07-walkability-score.md)
+      — **signature/novel**: open, tunable alternative to Walk Score
+- [ ] [Amenity gap / "desert" detection](docs/proposals/08-amenity-gap-detection.md)
+      — **signature/novel**: report what's _missing_
+- [ ] [Agent-native outputs & disambiguation](docs/proposals/11-agent-native-outputs.md)
+      — schema-stable output, concise mode, ambiguity as candidates
+
+### P2 — following
+
+- [ ] [Multi-stop errand planner](docs/proposals/09-errand-planner.md)
+      — **most novel**: one POI per category, shortest trip (Generalized TSP)
+- [ ] [Location comparison / relocation scorecard](docs/proposals/10-location-comparison.md)
+- [ ] [Export, bulk scoring & offline datasets](docs/proposals/12-export-bulk-offline.md)
+      — leverages OSM's freely-storable data (commercial APIs forbid this)
+
+### Platform
+
+- [ ] More providers (bring-your-own-key): Google Places, Mapbox, Foursquare
+- [ ] **Python port → PyPI** (`pip install proximap`); name reserved
 - [ ] **Web UI** (`apps/web`): map + search over `@proximap/core`
 - [ ] **Claude Code plugin** packaging around the MCP server
+
+### Deliberately deprioritized
+
+- **Cross-provider POI conflation** — Overture Maps + Placekey already publish
+  deduped POIs with confidence/stable IDs; the key-free constraint would make us
+  re-derive a worse subset. (We may instead _enrich_ from the open
+  Overture/Foursquare dumps.)
+- **Demographic trade-area analysis** — the valuable layer (population, foot
+  traffic) isn't in OSM, and competitor-density catchment is already free via
+  OpenRouteService isochrone stats.
 
 Have an idea? See [CONTRIBUTING.md](CONTRIBUTING.md).
