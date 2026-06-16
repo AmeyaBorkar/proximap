@@ -29,3 +29,4 @@ export * from './walkability';
 export * from './compare';
 export * from './errands';
 export * from './export';
+export * from './snapshot';

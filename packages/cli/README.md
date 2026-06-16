@@ -57,6 +57,13 @@ proximap compare "Prenzlauer Berg, Berlin" "Marzahn, Berlin" --weights grocery=3
 # Export results for GIS / spreadsheets (OSM data is yours to store under ODbL)
 proximap near "Eiffel Tower, Paris" -c food --format geojson > food.geojson
 proximap near "Eiffel Tower, Paris" -c food --format csv > food.csv
+
+# Snapshot an area once, then query it offline with no network calls
+proximap snapshot "Montmartre, Paris" --radius 1500 --out montmartre.json
+proximap near "48.8867,2.3431" -c cafe --dataset montmartre.json
+
+# Bulk-score many locations from a file → CSV
+proximap bulk addresses.txt > scores.csv
 ```
 
 Run `proximap --help` or `proximap <command> --help` for all options.

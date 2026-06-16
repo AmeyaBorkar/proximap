@@ -1,17 +1,21 @@
+import { readFileSync, writeFileSync } from 'node:fs';
 import {
   compareLocations,
+  DatasetPlacesProvider,
   detectGaps,
   disambiguateLocation,
   findNearbyAmenities,
   ODBL_ATTRIBUTION,
   planErrands,
   reachableAmenities,
+  snapshotArea,
   toCSV,
   toGeoJSON,
   ValhallaRoutingProvider,
   walkabilityScore,
   type CategoryWeight,
   type FacetFilters,
+  type SnapshotDataset,
   type TravelMode,
 } from '@proximap/core';
 import { Command } from 'commander';
@@ -37,10 +41,24 @@ interface NearOptions {
   by?: string;
   mode: string;
   explain?: boolean;
+  dataset?: string;
   limit: string;
   lang?: string;
   json?: boolean;
   format?: string;
+}
+
+interface SnapshotCommandOptions {
+  out?: string;
+  radius: string;
+  category: string[];
+  lang?: string;
+}
+
+interface BulkCommandOptions {
+  ideal: string;
+  max: string;
+  lang?: string;
 }
 
 interface GeocodeCommandOptions {
@@ -186,6 +204,20 @@ function parseFilters(pairs: string[]): FacetFilters {
   return filters;
 }
 
+/** Load a proximap snapshot file for offline POI queries. */
+function loadDataset(path: string): SnapshotDataset {
+  const data: unknown = JSON.parse(readFileSync(path, 'utf8'));
+  if (!data || typeof data !== 'object' || !Array.isArray((data as SnapshotDataset).pois)) {
+    throw new Error(`not a proximap snapshot (no "pois" array): ${path}`);
+  }
+  return data as SnapshotDataset;
+}
+
+/** Quote a CSV field when it contains a comma, quote, or newline (RFC 4180). */
+function csvField(value: string): string {
+  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
 async function runNear(query: string, options: NearOptions): Promise<void> {
   const radiusMeters = parsePositiveInt(options.radius, 'radius');
   const limit = parsePositiveInt(options.limit, 'limit');
@@ -193,9 +225,13 @@ async function runNear(query: string, options: NearOptions): Promise<void> {
   const filters = parseFilters(options.filter);
   const open = options.openAt ? { at: options.openAt } : options.openNow ? 'now' : undefined;
   const byTravelTime = options.by !== undefined && /time/i.test(options.by);
+  const places = options.dataset
+    ? new DatasetPlacesProvider(loadDataset(options.dataset))
+    : undefined;
   const result = await findNearbyAmenities(query, {
     radiusMeters,
     limit,
+    ...(places ? { places } : {}),
     ...(options.category.length > 0 ? { categories: options.category } : {}),
     ...(Object.keys(filters).length > 0 ? { filters } : {}),
     ...(options.accessible ? { accessible: true } : {}),
@@ -326,6 +362,51 @@ async function runErrands(query: string, options: ErrandsCommandOptions): Promis
   process.stdout.write(`${output}\n`);
 }
 
+async function runSnapshot(query: string, options: SnapshotCommandOptions): Promise<void> {
+  const dataset = await snapshotArea(query, {
+    radiusMeters: parsePositiveInt(options.radius, 'radius'),
+    ...(options.category.length > 0 ? { categories: options.category } : {}),
+    ...(options.lang ? { language: options.lang } : {}),
+  });
+  const json = JSON.stringify(dataset, null, 2);
+  if (options.out) {
+    writeFileSync(options.out, `${json}\n`, 'utf8');
+    process.stderr.write(`Wrote ${dataset.pois.length} POIs to ${options.out}\n`);
+  } else {
+    process.stdout.write(`${json}\n`);
+  }
+  process.stderr.write(`${ODBL_ATTRIBUTION}\n`);
+}
+
+async function runBulk(file: string, options: BulkCommandOptions): Promise<void> {
+  const idealMeters = parsePositiveInt(options.ideal, 'ideal');
+  const maxMeters = parsePositiveInt(options.max, 'max');
+  if (maxMeters <= idealMeters) throw new Error('--max must be greater than --ideal');
+
+  const locations = readFileSync(file, 'utf8')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith('#'));
+
+  process.stdout.write('location,lat,lng,score,confidence,missing\n');
+  for (const location of locations) {
+    try {
+      const report = await walkabilityScore(location, {
+        decay: { idealMeters, maxMeters },
+        ...(options.lang ? { language: options.lang } : {}),
+      });
+      const { lat, lng } = report.origin.location;
+      process.stdout.write(
+        `${csvField(location)},${lat},${lng},${report.score},${report.confidence},${csvField(report.missing.join(';'))}\n`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stdout.write(`${csvField(location)},,,,,${csvField(`error: ${message}`)}\n`);
+    }
+  }
+  process.stderr.write(`${ODBL_ATTRIBUTION}\n`);
+}
+
 function fail(error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(`proximap: ${message}\n`);
@@ -362,6 +443,10 @@ program
   .option('--by <metric>', 'rank by distance (default) or travel-time')
   .option('--mode <mode>', 'travel mode for --by travel-time: walk, bike, drive', 'walk')
   .option('--explain', 'annotate each result with a short ranking reason')
+  .option(
+    '--dataset <file>',
+    'query a local snapshot file offline (use "lat,lng" for full offline)',
+  )
   .option('-n, --limit <count>', 'maximum number of results', '20')
   .option('--lang <code>', 'preferred language for place names (e.g. en)')
   .option('--json', 'output raw JSON instead of a list')
@@ -446,5 +531,31 @@ program
   .option('--lang <code>', 'preferred language')
   .option('--json', 'output raw JSON')
   .action((locations: string[], options: CompareCommandOptions) => runCompare(locations, options));
+
+program
+  .command('snapshot')
+  .description("capture an area's POIs to a file for offline reuse (ODbL — yours to store)")
+  .argument('<query...>', 'area center: place name, address, or "lat,lng"')
+  .option('-o, --out <file>', 'write the snapshot JSON to this file (else stdout)')
+  .option('-r, --radius <meters>', 'radius to capture', '2000')
+  .option(
+    '-c, --category <term>',
+    'restrict the capture to a category/term (repeatable)',
+    collect,
+    [],
+  )
+  .option('--lang <code>', 'preferred language')
+  .action((parts: string[], options: SnapshotCommandOptions) =>
+    runSnapshot(parts.join(' '), options),
+  );
+
+program
+  .command('bulk')
+  .description('walkability-score many locations from a file (one per line) → CSV')
+  .argument('<file>', 'text file with one place/address/"lat,lng" per line (# comments allowed)')
+  .option('--ideal <meters>', 'distance that still scores full marks', '400')
+  .option('--max <meters>', 'distance beyond which a category scores zero', '2400')
+  .option('--lang <code>', 'preferred language')
+  .action((file: string, options: BulkCommandOptions) => runBulk(file, options));
 
 program.parseAsync().catch(fail);

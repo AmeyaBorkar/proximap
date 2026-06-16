@@ -1,6 +1,6 @@
 # 12 — Export, bulk scoring & offline datasets
 
-- **Status:** Partially implemented (v1: GeoJSON/CSV export with ODbL notice. Bulk/batch, snapshots, offline dataset provider, and Parquet are follow-ups) · **Tier:** P2 · **Novelty:** Differentiated · **Complexity:** Med
+- **Status:** Implemented (v1: GeoJSON/CSV export, area snapshots, offline `DatasetPlacesProvider`, bulk walkability scoring — all with the ODbL notice. Parquet stays an optional-dependency follow-up) · **Tier:** P2 · **Novelty:** Differentiated · **Complexity:** Med
 
 ## Problem
 
