@@ -19,26 +19,63 @@ python/         PyPI port (planned)
 ```
 query: place name | "lat,lng" | LatLng
    │
-   ├─ GeocodingProvider.geocode()  (or parseCoordinates for "lat,lng")  ─▶ origin: Place
+   ├─ resolveOrigin → GeocodingProvider.geocode()  (parseCoordinates for "lat,lng")  ─▶ origin: Place
+   │                  └─ disambiguateLocation(): ambiguous names ─▶ ranked candidates, not a guess
    │
-   ├─ PlacesProvider.findNearby(origin, { radiusMeters, categories })   ─▶ Poi[]
-   │        └─ categorize(tags): OSM tags ─▶ one of 16 normalized categories
+   ├─ PlacesProvider.findNearby(origin, { radiusMeters, selectors })  ─▶ Poi[]
+   │        ├─ taxonomy: NL term ("coffee") ─▶ targeted Overpass tag union
+   │        ├─ categorize(tags): OSM tags ─▶ one of 16 normalized categories
+   │        └─ dedupePois + completeness / lastVerified quality signals
    │
-   └─ rankByProximity(origin, pois)  ─▶ RankedPoi[]  (haversine distance + score + rank)
+   ├─ filters: facets (diet/payment/wifi/wheelchair) · open-now (isOpenAt) · accessibility
+   │
+   └─ ranking
+        ├─ rankByProximity (haversine, stable id tie-break)               ─▶ RankedPoi[]
+        └─ rankByTravelTime (RoutingProvider.matrix → Valhalla/OSRM,        + travelSeconds
+                             haversine fallback)                            + rankingReason
 ```
 
-`findNearbyAmenities()` in `packages/core/src/nearby.ts` wires these together
-and is the headline entry point.
+`findNearbyAmenities()` in `packages/core/src/nearby.ts` wires these together and is the headline
+entry point. Higher-level features **compose** it (and the same providers): `walkabilityScore`,
+`detectGaps`, `reachableAmenities`, `compareLocations`, and `planErrands`.
+
+## Core modules
+
+```
+types · geo (haversine, formatters) · categories · taxonomy (NL resolver)
+quality (dedup + completeness) · hours (opening_hours evaluator) · http (rate limit/retry/cache)
+proximity (nearestMatchingPoi) · ranking · routing (RoutingProvider + haversine + geometry)
+filters (facets + accessibility scorer) · origin · disambiguate · nearby
+reachable · gaps · walkability · compare · errands (Generalized-TSP DP) · export · snapshot
+
+providers/  nominatim · overpass · valhalla · osrm
+```
+
+Each composed feature exposes a CLI command and (where it suits an agent) an MCP tool, over the same
+core function.
 
 ## Key decisions
 
 - **OpenStreetMap by default.** Nominatim (geocoding) + Overpass (POIs) need no
   API key. OSM's amenity tagging is well-suited to "what's nearby."
-- **Provider abstraction.** `GeocodingProvider` and `PlacesProvider` are small
-  interfaces. Google Maps / Mapbox / Foursquare can be dropped in with a user's
-  key without touching the ranking pipeline.
+- **Provider abstraction.** `GeocodingProvider`, `PlacesProvider`, and
+  `RoutingProvider` are small interfaces. Google Maps / Mapbox / Foursquare /
+  self-hosted routing can be dropped in with a user's key/endpoint without
+  touching the pipeline. A file-backed `DatasetPlacesProvider` answers queries
+  offline from a `snapshot`.
+- **Routing is composed, not built.** Travel time and isochrones come from
+  pluggable engines (Valhalla via the key-free FOSSGIS instance, or OSRM), and
+  **degrade gracefully to haversine** so everything works key-free and offline.
 - **Dependency-free core.** HTTP uses the platform `fetch`; distances use a
-  hand-written haversine. Smaller install, fewer supply-chain risks.
+  hand-written haversine; the `opening_hours` evaluator is hand-written for the
+  common grammar (and returns `unknown`, never a guess, for the rest). Smaller
+  install, fewer supply-chain risks.
+- **Honest about data.** OSM under-maps some areas, so absence is framed as
+  "not found in OSM," scores carry a `confidence`, and ambiguous place names
+  return candidates rather than a confident wrong pick.
+- **Agent-native.** Deterministic ordering (stable `id` tie-break), optional
+  `explain` reasons, a concise MCP payload mode, and disambiguation make the
+  MCP surface safe and economical for agents.
 - **TypeScript-first.** The near-term surfaces (MCP, Web UI) are JS-native and
   npm publishing is native. The core is deliberately portable so a Python
   implementation can mirror it for PyPI.
@@ -54,8 +91,12 @@ and is the headline entry point.
 
 - **New data source:** implement `GeocodingProvider` / `PlacesProvider` and pass
   it via `findNearbyAmenities(query, { geocoder, places })`.
-- **New category:** extend `CATEGORIES` in `types.ts` and the mapping in
-  `categories.ts` (the label map is exhaustive, so the compiler will remind you).
+- **New routing engine:** implement `RoutingProvider` (`matrix`, optional
+  `isochrone`) and pass it via `{ routing }` to `findNearbyAmenities`,
+  `reachableAmenities`, or `planErrands`.
+- **New category / term:** extend `CATEGORIES` in `types.ts`, the mapping in
+  `categories.ts` (the label map is exhaustive, so the compiler reminds you), and
+  the query vocabulary in `taxonomy.ts`.
 - **New surface:** add a package/app that depends on `@proximap/core`.
 
 ## Quality gates

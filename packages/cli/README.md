@@ -11,6 +11,22 @@ npm install -g @proximap/cli
 npx @proximap/cli near "Eiffel Tower, Paris"
 ```
 
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `near <place>` | Nearby amenities, ranked by distance (or `--by travel-time`). Filters, accessibility, open-now, export, offline. |
+| `geocode <place>` | Resolve a name to coordinates; warns and lists candidates when ambiguous. |
+| `gaps <place>` | Which everyday amenities are missing nearby (framed as "not found in OSM"). |
+| `score <place>` | Walkability score 0–100 with a per-category breakdown and confidence. |
+| `compare <a> <b> …` | Rank 2+ locations by weighted access to what you care about. |
+| `reachable <place>` | What's reachable within a time budget (isochrone). |
+| `errands <place>` | Shortest trip that hits one of each category (Generalized TSP). |
+| `snapshot <place>` | Capture an area's POIs to a file for offline reuse. |
+| `bulk <file>` | Walkability-score many locations from a file → CSV. |
+
+Run `proximap --help` or `proximap <command> --help` for all flags.
+
 ## Usage
 
 ```bash

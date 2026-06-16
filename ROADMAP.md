@@ -3,21 +3,24 @@
 proximap starts with "what's near here, ranked?" and grows into a broader
 geospatial toolkit. Ordering is indicative, not a commitment.
 
-## Shipped — v0
+## Shipped
 
-- [x] Place / address / `lat,lng` → nearby amenities, ranked by distance
-- [x] OpenStreetMap backends (Nominatim geocoding + Overpass POIs), no API keys
-- [x] 16-category taxonomy with filtering
-- [x] Pluggable `GeocodingProvider` / `PlacesProvider` interfaces
-- [x] CLI: `near`, `geocode`
-- [x] MCP server: `find_nearby_amenities`, `geocode`
+The full researched backlog (proposals 01–12) is **implemented (v1)** and verified against live OSM.
+
+- [x] Place / address / `lat,lng` → nearby amenities, ranked by **distance or travel time**
+- [x] OSM backends, no API keys: Nominatim (geocoding), Overpass (POIs), Valhalla/OSRM (routing)
+- [x] 16-category taxonomy + natural-language category resolver
+- [x] Pluggable `GeocodingProvider` / `PlacesProvider` / `RoutingProvider`; offline `DatasetPlacesProvider`
+- [x] CLI (9 commands): `near`, `geocode`, `gaps`, `score`, `compare`, `reachable`, `errands`, `snapshot`, `bulk`
+- [x] MCP server (8 tools): `find_nearby_amenities`, `geocode`, `list_categories`, `detect_amenity_gaps`,
+      `walkability_score`, `compare_locations`, `reachable_amenities`, `plan_errands`
+- [x] Facets/accessibility, open-now, export (GeoJSON/CSV), disambiguation, explainable + deterministic output
 - [x] Dependency-free core, dual ESM/CJS build, CI on Node 20 & 24
 
-The next features come out of a competitive-research pass (2026-06). The guiding
-finding: proximap's edge is **openness + composition + agent-native delivery**,
-not richer data — so we build what's underserved on open data and merely *consume*
-commodities like routing/isochrones. Full designs live in
-[`docs/proposals/`](docs/proposals/README.md).
+The features came out of a competitive-research pass (2026-06). The guiding finding: proximap's edge is
+**openness + composition + agent-native delivery**, not richer data — so we built what's underserved on
+open data and merely *consume* commodities like routing/isochrones. Full designs (and v1 limitations) live
+in [`docs/proposals/`](docs/proposals/README.md).
 
 ### P0 — foundation (unlocks the rest) — ✅ shipped
 
@@ -28,7 +31,7 @@ commodities like routing/isochrones. Full designs live in
 - [x] [Resilient, cached, policy-safe OSM client](docs/proposals/03-resilient-osm-client.md)
       — rate limits, retries, caching, self-host/offline
 
-### P1 — next milestone
+### P1 — ✅ shipped
 
 - [x] [Open-now / open-at](docs/proposals/04-open-now.md) — query by `opening_hours`
       (`--open-now`, `--open-at`; dependency-free evaluator)
@@ -43,7 +46,7 @@ commodities like routing/isochrones. Full designs live in
 - [x] [Agent-native outputs & disambiguation](docs/proposals/11-agent-native-outputs.md)
       — disambiguation, `explain`, concise mode, stable ordering (`outputSchema` pending)
 
-### P2 — following
+### P2 — ✅ shipped
 
 - [x] [Multi-stop errand planner](docs/proposals/09-errand-planner.md)
       — **most novel**: one POI per category, shortest trip (Generalized TSP) (`errands`)
@@ -52,6 +55,14 @@ commodities like routing/isochrones. Full designs live in
 - [x] [Export, bulk scoring & offline datasets](docs/proposals/12-export-bulk-offline.md)
       — leverages OSM's freely-storable data (commercial APIs forbid this):
       `near --format geojson|csv`, `snapshot`, `near --dataset` (offline), `bulk`. Parquet pending.
+
+### v1 follow-ups (within shipped features)
+
+- [ ] Polygon centroids for ways/relations ([02](docs/proposals/02-poi-dedup-and-quality.md))
+- [ ] `opening_hours` timezone/holiday correctness ([04](docs/proposals/04-open-now.md))
+- [ ] MCP `outputSchema` / `structuredContent` + elicitation ([11](docs/proposals/11-agent-native-outputs.md))
+- [ ] Bulk over `near`/`gaps` + Parquet export ([12](docs/proposals/12-export-bulk-offline.md))
+- [ ] Facet push-down to Overpass; curb-cut/tactile-paving pass ([05](docs/proposals/05-facets-and-accessibility.md))
 
 ### Platform
 
