@@ -1,11 +1,4 @@
-import {
-  CATEGORIES,
-  findNearbyAmenities,
-  isCategory,
-  NominatimGeocoder,
-  type Category,
-  type GeocodeOptions,
-} from '@proximap/core';
+import { findNearbyAmenities, NominatimGeocoder, type GeocodeOptions } from '@proximap/core';
 import { Command } from 'commander';
 import { renderGeocode, renderNearby } from './render';
 
@@ -37,26 +30,14 @@ function parsePositiveInt(value: string, name: string): number {
   return parsed;
 }
 
-function validateCategories(values: string[]): Category[] {
-  const invalid = values.filter((value) => !isCategory(value));
-  if (invalid.length > 0) {
-    throw new Error(
-      `Unknown categor${invalid.length > 1 ? 'ies' : 'y'}: ${invalid.join(', ')}\n` +
-        `Valid categories: ${CATEGORIES.join(', ')}`,
-    );
-  }
-  return values as Category[];
-}
-
 async function runNear(query: string, options: NearOptions): Promise<void> {
   const radiusMeters = parsePositiveInt(options.radius, 'radius');
   const limit = parsePositiveInt(options.limit, 'limit');
-  const categories = validateCategories(options.category);
 
   const result = await findNearbyAmenities(query, {
     radiusMeters,
     limit,
-    ...(categories.length > 0 ? { categories } : {}),
+    ...(options.category.length > 0 ? { categories: options.category } : {}),
     ...(options.lang ? { language: options.lang } : {}),
   });
 
@@ -91,7 +72,12 @@ program
   .description('list nearby amenities ranked by distance')
   .argument('<query...>', 'place name, address, or "lat,lng"')
   .option('-r, --radius <meters>', 'search radius in metres', '1000')
-  .option('-c, --category <name>', 'restrict to a category (repeatable)', collect, [])
+  .option(
+    '-c, --category <term>',
+    'restrict to a category or term, e.g. coffee (repeatable)',
+    collect,
+    [],
+  )
   .option('-n, --limit <count>', 'maximum number of results', '20')
   .option('--lang <code>', 'preferred language for place names (e.g. en)')
   .option('--json', 'output raw JSON instead of a list')

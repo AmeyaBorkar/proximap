@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CATEGORIES, findNearbyAmenities, NominatimGeocoder } from '@proximap/core';
+import { categoryVocabulary, findNearbyAmenities, NominatimGeocoder } from '@proximap/core';
 import { z } from 'zod';
 import { toGeocodePayload, toNearbyPayload } from './payload';
 
@@ -31,7 +31,10 @@ server.registerTool(
         .positive()
         .optional()
         .describe('Search radius in metres (default 1000)'),
-      categories: z.array(z.enum(CATEGORIES)).optional().describe('Restrict to these categories'),
+      categories: z
+        .array(z.string())
+        .optional()
+        .describe('Restrict to categories or terms, e.g. coffee, pharmacy, petrol'),
       limit: z
         .number()
         .int()
@@ -80,6 +83,18 @@ server.registerTool(
       return errorResult(error);
     }
   },
+);
+
+server.registerTool(
+  'list_categories',
+  {
+    title: 'List categories',
+    description:
+      'List the category terms proximap understands, for use with find_nearby_amenities. ' +
+      'Returns each canonical term and its top-level category.',
+    inputSchema: {},
+  },
+  async () => jsonResult(categoryVocabulary()),
 );
 
 const transport = new StdioServerTransport();
