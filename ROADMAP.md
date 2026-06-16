@@ -34,8 +34,8 @@ commodities like routing/isochrones. Full designs live in
       (`--open-now`, `--open-at`; dependency-free evaluator)
 - [x] [Facet filters + accessibility-first search](docs/proposals/05-facets-and-accessibility.md)
       — diet/payment/wifi + wheelchair/step-free ranking (`--filter`, `--accessible`)
-- [ ] [Travel-time ranking & isochrone reachability](docs/proposals/06-travel-time-and-isochrones.md)
-      — pluggable OSRM/Valhalla/ORS, haversine fallback _(commodity, composed)_
+- [x] [Travel-time ranking & isochrone reachability](docs/proposals/06-travel-time-and-isochrones.md)
+      — pluggable OSRM/Valhalla, haversine fallback (`near --by travel-time`, `reachable`)
 - [x] [Transparent walkability / 15-minute score](docs/proposals/07-walkability-score.md)
       — **signature/novel**: open, tunable alternative to Walk Score (`score` / `walkability_score`)
 - [x] [Amenity gap / "desert" detection](docs/proposals/08-amenity-gap-detection.md)

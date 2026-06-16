@@ -8,6 +8,7 @@ import {
   type OpenState,
   type Place,
   type RankedPoi,
+  type ReachableResult,
   type WalkabilityReport,
 } from '@proximap/core';
 import pc from 'picocolors';
@@ -82,6 +83,40 @@ function openMark(poi: RankedPoi): string {
   }
   if (state === 'unknown') return `  ${pc.dim('hours?')}`;
   return '';
+}
+
+/** Render an isochrone-reachability result: what's within the time budget. */
+export function renderReachable(result: ReachableResult): string {
+  const { origin, results, withinMinutes, mode, isochrone, count } = result;
+  const word = MODE_WORDS[mode] ?? mode;
+  const basis = isochrone ? 'isochrone' : 'straight-line estimate';
+  const lines: string[] = [
+    pc.bold(origin.displayName),
+    pc.dim(
+      `${coordString(origin.location.lat, origin.location.lng)} · ` +
+        `${count} reachable within ${withinMinutes} min ${word} (${basis})`,
+    ),
+    '',
+  ];
+  if (results.length === 0) {
+    lines.push(pc.dim('Nothing reachable within that budget.'));
+    return lines.join('\n');
+  }
+  const rankWidth = String(results.length).length;
+  for (const poi of results) {
+    const rank = String(poi.rank).padStart(rankWidth);
+    const label = CATEGORY_LABELS[poi.category];
+    const name = poi.name ?? poi.kind ?? label;
+    const distance = formatDistance(poi.distanceMeters);
+    const metric =
+      poi.travelSeconds !== undefined
+        ? `${formatDuration(poi.travelSeconds)} · ${distance}`
+        : distance;
+    lines.push(
+      `${pc.dim(`${rank}.`)} ${name}  ${pc.dim(`${label} · ${metric}`)}${accessibilityMark(poi.tags.wheelchair)}`,
+    );
+  }
+  return lines.join('\n');
 }
 
 /** Render geocoding candidates with their addresses and coordinates. */

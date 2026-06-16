@@ -1,6 +1,6 @@
 # 06 — Travel-time ranking & isochrone reachability
 
-- **Status:** Proposed · **Tier:** P1 · **Novelty:** Table-stakes (our value is composition) · **Complexity:** Med
+- **Status:** Implemented (v1; haversine + Valhalla + OSRM adapters, travel-time ranking, isochrone reachability) · **Tier:** P1 · **Novelty:** Table-stakes (our value is composition) · **Complexity:** Med
 
 ## Problem
 

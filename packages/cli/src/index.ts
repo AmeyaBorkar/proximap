@@ -4,6 +4,7 @@ import {
   findNearbyAmenities,
   NominatimGeocoder,
   ODBL_ATTRIBUTION,
+  reachableAmenities,
   toCSV,
   toGeoJSON,
   ValhallaRoutingProvider,
@@ -14,7 +15,14 @@ import {
   type GeocodeOptions,
 } from '@proximap/core';
 import { Command } from 'commander';
-import { renderComparison, renderGaps, renderGeocode, renderNearby, renderScore } from './render';
+import {
+  renderComparison,
+  renderGaps,
+  renderGeocode,
+  renderNearby,
+  renderReachable,
+  renderScore,
+} from './render';
 
 const VERSION = '0.1.0';
 
@@ -62,6 +70,14 @@ interface CompareCommandOptions {
   json?: boolean;
 }
 
+interface ReachableCommandOptions {
+  within: string;
+  mode: string;
+  category: string[];
+  lang?: string;
+  json?: boolean;
+}
+
 function collect(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
@@ -92,6 +108,19 @@ function parseMode(value: string): TravelMode {
   const mode = MODE_ALIASES[value.trim().toLowerCase()];
   if (!mode) throw new Error(`--mode must be walk, bike, or drive (got "${value}")`);
   return mode;
+}
+
+/** Parse a time budget like "15", "15min", or "15 minutes" into minutes. */
+function parseWithin(value: string): number {
+  const match = value
+    .trim()
+    .toLowerCase()
+    .match(/^(\d+(?:\.\d+)?)\s*(?:m|min|mins|minutes)?$/);
+  const minutes = match ? Number(match[1]) : NaN;
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    throw new Error(`--within must be a positive number of minutes (got "${value}")`);
+  }
+  return minutes;
 }
 
 /** Parse repeatable `--filter key=value` (or bare `key`) pairs into FacetFilters. */
@@ -254,6 +283,18 @@ async function runCompare(queries: string[], options: CompareCommandOptions): Pr
   process.stdout.write(`${output}\n`);
 }
 
+async function runReachable(query: string, options: ReachableCommandOptions): Promise<void> {
+  const result = await reachableAmenities(query, {
+    within: parseWithin(options.within),
+    mode: parseMode(options.mode),
+    routing: new ValhallaRoutingProvider(),
+    ...(options.category.length > 0 ? { categories: options.category } : {}),
+    ...(options.lang ? { language: options.lang } : {}),
+  });
+  const output = options.json ? JSON.stringify(result, null, 2) : renderReachable(result);
+  process.stdout.write(`${output}\n`);
+}
+
 function fail(error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(`proximap: ${message}\n`);
@@ -331,6 +372,19 @@ program
   .option('--lang <code>', 'preferred language')
   .option('--json', 'output raw JSON')
   .action((parts: string[], options: ScoreCommandOptions) => runScore(parts.join(' '), options));
+
+program
+  .command('reachable')
+  .description('list amenities reachable within a time budget (isochrone)')
+  .argument('<query...>', 'place name, address, or "lat,lng"')
+  .option('--within <minutes>', 'time budget, e.g. 15 or 15min', '15')
+  .option('--mode <mode>', 'travel mode: walk, bike, drive', 'walk')
+  .option('-c, --category <term>', 'restrict to a category or term (repeatable)', collect, [])
+  .option('--lang <code>', 'preferred language')
+  .option('--json', 'output raw JSON')
+  .action((parts: string[], options: ReachableCommandOptions) =>
+    runReachable(parts.join(' '), options),
+  );
 
 program
   .command('compare')

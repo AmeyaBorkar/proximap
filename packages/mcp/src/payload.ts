@@ -3,6 +3,7 @@ import type {
   GapReport,
   NearbyResult,
   Place,
+  ReachableResult,
   WalkabilityReport,
 } from '@proximap/core';
 
@@ -36,6 +37,34 @@ export function toNearbyPayload(result: NearbyResult) {
       wheelchairDescription: poi.tags['wheelchair:description'] ?? null,
       openState: poi.openState ?? null,
       nextChange: poi.nextChange ?? null,
+    })),
+  };
+}
+
+/** Flatten an isochrone-reachability result for agent consumption. */
+export function toReachablePayload(result: ReachableResult) {
+  return {
+    origin: {
+      name: result.origin.name,
+      displayName: result.origin.displayName,
+      lat: result.origin.location.lat,
+      lng: result.origin.location.lng,
+    },
+    withinMinutes: result.withinMinutes,
+    mode: result.mode,
+    isochrone: result.isochrone, // [lng, lat] ring, or null
+    count: result.count,
+    results: result.results.map((poi) => ({
+      rank: poi.rank,
+      name: poi.name ?? null,
+      category: poi.category,
+      kind: poi.kind ?? null,
+      travelSeconds: poi.travelSeconds ?? null,
+      travelMeters: poi.travelMeters ?? null,
+      distanceMeters: Math.round(poi.distanceMeters),
+      lat: poi.location.lat,
+      lng: poi.location.lng,
+      osmId: poi.id,
     })),
   };
 }

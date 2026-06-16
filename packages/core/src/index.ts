@@ -22,6 +22,7 @@ export * from './filters';
 export * from './origin';
 export * from './proximity';
 export * from './nearby';
+export * from './reachable';
 export * from './gaps';
 export * from './walkability';
 export * from './compare';

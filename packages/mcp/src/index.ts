@@ -6,6 +6,7 @@ import {
   detectGaps,
   findNearbyAmenities,
   NominatimGeocoder,
+  reachableAmenities,
   ValhallaRoutingProvider,
   walkabilityScore,
 } from '@proximap/core';
@@ -15,6 +16,7 @@ import {
   toGapsPayload,
   toGeocodePayload,
   toNearbyPayload,
+  toReachablePayload,
   toScorePayload,
 } from './payload';
 
@@ -284,6 +286,42 @@ server.registerTool(
         ...(language ? { language } : {}),
       });
       return jsonResult(toComparePayload(report));
+    } catch (error) {
+      return errorResult(error);
+    }
+  },
+);
+
+server.registerTool(
+  'reachable_amenities',
+  {
+    title: 'Reachable amenities',
+    description:
+      'List the amenities reachable within a time budget (e.g. a 15-minute walk) using a real ' +
+      'isochrone where available, falling back to a travel-time threshold. Returns the filtered, ' +
+      'time-sorted amenity list (the answer), plus the isochrone polygon. Powered by OpenStreetMap ' +
+      '+ the key-free Valhalla engine.',
+    inputSchema: {
+      query: z.string().describe('Place name, address, or "lat,lng" coordinates'),
+      within: z.number().positive().describe('Time budget in minutes (e.g. 15)'),
+      mode: z.enum(['walk', 'bike', 'drive']).optional().describe('Travel mode (default walk)'),
+      categories: z
+        .array(z.string())
+        .optional()
+        .describe('Restrict to categories or terms, e.g. grocery, pharmacy'),
+      language: z.string().optional().describe('Preferred language for names'),
+    },
+  },
+  async ({ query, within, mode, categories, language }) => {
+    try {
+      const result = await reachableAmenities(query, {
+        within,
+        routing: new ValhallaRoutingProvider(),
+        ...(mode ? { mode } : {}),
+        ...(categories ? { categories } : {}),
+        ...(language ? { language } : {}),
+      });
+      return jsonResult(toReachablePayload(result));
     } catch (error) {
       return errorResult(error);
     }

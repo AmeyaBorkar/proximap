@@ -30,6 +30,12 @@ proximap near "Bahnhofstrasse, Zürich" -c food --accessible
 proximap near "Shibuya, Tokyo" -c coffee --open-now
 proximap near "Shibuya, Tokyo" -c food --open-at 2026-06-20T21:00
 
+# Rank by real walking/cycling/driving time (key-free Valhalla routing)
+proximap near "Alexanderplatz, Berlin" -c cafe --by travel-time --mode walk
+
+# What's reachable within a 15-minute walk? (isochrone)
+proximap reachable "Alexanderplatz, Berlin" --within 15min --mode walk -c grocery
+
 # Works with coordinates too
 proximap near "48.8584,2.2945"
 
