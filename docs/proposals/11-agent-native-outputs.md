@@ -1,6 +1,6 @@
 # 11 — Agent-native outputs & disambiguation
 
-- **Status:** Proposed · **Tier:** P1 · **Novelty:** Differentiated · **Complexity:** Low–Med
+- **Status:** Implemented (v1: disambiguation, explainable ranking, deterministic id tie-break, concise MCP mode. MCP `outputSchema`/`structuredContent` + elicitation are follow-ups) · **Tier:** P1 · **Novelty:** Differentiated · **Complexity:** Low–Med
 
 ## Problem
 

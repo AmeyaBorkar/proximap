@@ -4,8 +4,8 @@ import {
   categoryVocabulary,
   compareLocations,
   detectGaps,
+  disambiguateLocation,
   findNearbyAmenities,
-  NominatimGeocoder,
   planErrands,
   reachableAmenities,
   ValhallaRoutingProvider,
@@ -14,9 +14,9 @@ import {
 import { z } from 'zod';
 import {
   toComparePayload,
+  toDisambiguationPayload,
   toErrandsPayload,
   toGapsPayload,
-  toGeocodePayload,
   toNearbyPayload,
   toReachablePayload,
   toScorePayload,
@@ -85,6 +85,14 @@ server.registerTool(
         .enum(['walk', 'bike', 'drive'])
         .optional()
         .describe('Travel mode for rankBy=travelTime (default walk)'),
+      explain: z
+        .boolean()
+        .optional()
+        .describe('Add a short ranking reason / summary to each result'),
+      concise: z
+        .boolean()
+        .optional()
+        .describe('Return a slim, high-signal payload (with a one-line summary) for token economy'),
       limit: z
         .number()
         .int()
@@ -103,11 +111,15 @@ server.registerTool(
     open,
     rankBy,
     mode,
+    explain,
+    concise,
     limit,
     language,
   }) => {
     try {
       const openOption = open === 'now' ? 'now' : open ? { at: open } : undefined;
+      // Concise mode needs the per-result summary, so it implies explain.
+      const explainOn = Boolean(explain || concise);
       const result = await findNearbyAmenities(query, {
         ...(radiusMeters ? { radiusMeters } : {}),
         ...(categories ? { categories } : {}),
@@ -122,10 +134,11 @@ server.registerTool(
               ...(mode ? { mode } : {}),
             }
           : {}),
+        ...(explainOn ? { explain: true } : {}),
         ...(limit ? { limit } : {}),
         ...(language ? { language } : {}),
       });
-      return jsonResult(toNearbyPayload(result));
+      return jsonResult(toNearbyPayload(result, { concise: Boolean(concise) }));
     } catch (error) {
       return errorResult(error);
     }
@@ -137,8 +150,9 @@ server.registerTool(
   {
     title: 'Geocode a place',
     description:
-      'Resolve a place name or address to coordinates using OpenStreetMap. ' +
-      'Returns ranked candidates with their full display names.',
+      'Resolve a place name or address to coordinates using OpenStreetMap. Returns the best ' +
+      'guess plus ranked candidates, and an `ambiguous` flag when several distinct places share ' +
+      'the name (e.g. the many "Springfield"s) — present the candidates instead of guessing.',
     inputSchema: {
       query: z.string().describe('Place name or address to look up'),
       limit: z.number().int().positive().optional().describe('Maximum candidates (default 5)'),
@@ -147,11 +161,11 @@ server.registerTool(
   },
   async ({ query, limit, language }) => {
     try {
-      const places = await new NominatimGeocoder().geocode(query, {
+      const result = await disambiguateLocation(query, {
         limit: limit ?? 5,
         ...(language ? { language } : {}),
       });
-      return jsonResult(toGeocodePayload(places));
+      return jsonResult(toDisambiguationPayload(result));
     } catch (error) {
       return errorResult(error);
     }

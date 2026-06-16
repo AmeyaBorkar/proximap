@@ -102,6 +102,8 @@ export interface RankedPoi extends Poi {
   travelSeconds?: number;
   /** Travel distance from the origin in metres — set only when ranking by travel time. */
   travelMeters?: number;
+  /** A short human-readable reason for this rank — set only when `explain` is on. */
+  rankingReason?: string;
 }
 
 /** Options for a geocoding lookup. */

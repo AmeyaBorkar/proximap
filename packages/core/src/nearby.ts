@@ -1,5 +1,6 @@
+import { CATEGORY_LABELS } from './categories';
 import { accessibleScorer, compileFacets, matchesFacets, type FacetFilters } from './filters';
-import { haversineMeters } from './geo';
+import { formatDistance, formatDuration, haversineMeters } from './geo';
 import { isOpenAt, type OpeningEvaluation } from './hours';
 import { resolveOrigin } from './origin';
 import { NominatimGeocoder } from './providers/nominatim';
@@ -74,6 +75,8 @@ export interface FindNearbyOptions {
    * if it errors, ranking falls back to haversine and `result.routing.fellBack` is set.
    */
   routing?: RoutingProvider;
+  /** Attach a short `rankingReason` to each result (e.g. "closest open cafe, 240 m"). */
+  explain?: boolean;
   /** Ranking tweaks (category weights or a custom scorer). */
   rank?: RankOptions;
   signal?: AbortSignal;
@@ -163,6 +166,11 @@ export async function findNearbyAmenities(
     });
   }
 
+  if (options.explain) {
+    const mode = options.mode ?? 'walk';
+    ranked = ranked.map((poi) => ({ ...poi, rankingReason: rankingReasonFor(poi, mode) }));
+  }
+
   const limit = options.limit ?? DEFAULT_LIMIT;
   const results = limit > 0 ? ranked.slice(0, limit) : ranked;
   return {
@@ -171,6 +179,38 @@ export async function findNearbyAmenities(
     total: ranked.length,
     ...(routingInfo ? { routing: routingInfo } : {}),
   };
+}
+
+const MODE_ADVERB: Record<TravelMode, string> = {
+  walk: 'on foot',
+  bike: 'by bike',
+  drive: 'by car',
+};
+
+/** Ordinal closeness word: 1 → "closest", 2 → "2nd-closest", … */
+function ordinalCloseness(rank: number): string {
+  if (rank === 1) return 'closest';
+  const mod100 = rank % 100;
+  const mod10 = rank % 10;
+  const suffix =
+    mod10 === 1 && mod100 !== 11
+      ? 'st'
+      : mod10 === 2 && mod100 !== 12
+        ? 'nd'
+        : mod10 === 3 && mod100 !== 13
+          ? 'rd'
+          : 'th';
+  return `${rank}${suffix}-closest`;
+}
+
+/** A short, deterministic explanation of a result's rank, e.g. "closest open cafe, 240 m". */
+function rankingReasonFor(poi: RankedPoi, mode: TravelMode): string {
+  const what = poi.kind ?? CATEGORY_LABELS[poi.category].toLowerCase();
+  const openness = poi.openState === 'open' ? 'open ' : '';
+  if (poi.travelSeconds !== undefined) {
+    return `${ordinalCloseness(poi.rank)} ${openness}${what} ${MODE_ADVERB[mode]}, ${formatDuration(poi.travelSeconds)}`;
+  }
+  return `${ordinalCloseness(poi.rank)} ${openness}${what}, ${formatDistance(poi.distanceMeters)}`;
 }
 
 /** Cap on candidates sent to a routing matrix — bounds cost and public-engine limits. */

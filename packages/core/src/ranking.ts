@@ -57,11 +57,14 @@ export function rankByProximity(
   }));
 
   const byScore = Boolean(options.scoreFn || options.categoryWeights);
-  scored.sort((a, b) =>
-    byScore
+  // A stable `id` tie-break makes the order byte-identical across runs — agents
+  // can rely on it (per the agent-native output goals).
+  scored.sort((a, b) => {
+    const primary = byScore
       ? b.score - a.score || a.distanceMeters - b.distanceMeters
-      : a.distanceMeters - b.distanceMeters,
-  );
+      : a.distanceMeters - b.distanceMeters;
+    return primary || a.poi.id.localeCompare(b.poi.id);
+  });
 
   return scored.map((entry, index) => ({
     ...entry.poi,

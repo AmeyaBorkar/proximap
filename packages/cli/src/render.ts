@@ -56,8 +56,9 @@ export function renderNearby(result: NearbyResult): string {
       poi.travelSeconds !== undefined
         ? `${formatDuration(poi.travelSeconds)} · ${distance}`
         : distance;
-    const meta = pc.dim(`${label} · ${metric}`);
-    const tags = `${accessibilityMark(poi.tags.wheelchair)}${openMark(poi)}`;
+    // With --explain, the reason ("closest open cafe, 240 m") replaces the meta.
+    const meta = pc.dim(poi.rankingReason ?? `${label} · ${metric}`);
+    const tags = `${accessibilityMark(poi.tags.wheelchair)}${poi.rankingReason ? '' : openMark(poi)}`;
     lines.push(`${pc.dim(`${rank}.`)} ${name}  ${meta}${tags}`);
   }
   return lines.join('\n');
@@ -121,11 +122,17 @@ export function renderReachable(result: ReachableResult): string {
 }
 
 /** Render geocoding candidates with their addresses and coordinates. */
-export function renderGeocode(places: Place[]): string {
+export function renderGeocode(places: Place[], ambiguous = false): string {
   if (places.length === 0) return 'No matches found.';
 
   const rankWidth = String(places.length).length;
   const lines: string[] = [];
+  if (ambiguous) {
+    lines.push(
+      pc.yellow(`⚠ Ambiguous — ${places.length} distinct places match this name; pick one:`),
+      '',
+    );
+  }
   places.forEach((place, index) => {
     const rank = String(index + 1).padStart(rankWidth);
     lines.push(`${pc.dim(`${rank}.`)} ${pc.bold(place.name)}`);

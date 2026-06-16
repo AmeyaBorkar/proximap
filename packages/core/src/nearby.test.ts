@@ -64,6 +64,16 @@ describe('findNearbyAmenities', () => {
     expect(results.map((r) => r.id)).toEqual(['node/1', 'node/2']);
   });
 
+  it('attaches a ranking reason when explain is on', async () => {
+    const { results } = await findNearbyAmenities('somewhere', {
+      geocoder,
+      places,
+      explain: true,
+    });
+    expect(results[0]!.rankingReason).toMatch(/^closest/);
+    expect(results[1]!.rankingReason).toMatch(/2nd-closest/);
+  });
+
   it('throws when the query cannot be geocoded', async () => {
     const empty: GeocodingProvider = {
       name: 'empty',

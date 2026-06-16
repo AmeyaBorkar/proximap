@@ -30,4 +30,18 @@ describe('rankByProximity', () => {
     });
     expect(ranked.map((r) => r.id)).toEqual(['hospital', 'cafe']);
   });
+
+  it('breaks distance ties by id for a byte-stable order', () => {
+    // Same coordinate ⇒ identical distance; order must be deterministic by id.
+    const order = rankByProximity(origin, [
+      poi('zebra', 0.001, 'food'),
+      poi('alpha', 0.001, 'food'),
+    ]);
+    expect(order.map((r) => r.id)).toEqual(['alpha', 'zebra']);
+    const reversed = rankByProximity(origin, [
+      poi('alpha', 0.001, 'food'),
+      poi('zebra', 0.001, 'food'),
+    ]);
+    expect(reversed.map((r) => r.id)).toEqual(['alpha', 'zebra']); // same regardless of input order
+  });
 });

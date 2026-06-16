@@ -1,8 +1,8 @@
 import {
   compareLocations,
   detectGaps,
+  disambiguateLocation,
   findNearbyAmenities,
-  NominatimGeocoder,
   ODBL_ATTRIBUTION,
   planErrands,
   reachableAmenities,
@@ -13,7 +13,6 @@ import {
   type CategoryWeight,
   type FacetFilters,
   type TravelMode,
-  type GeocodeOptions,
 } from '@proximap/core';
 import { Command } from 'commander';
 import {
@@ -37,6 +36,7 @@ interface NearOptions {
   openAt?: string;
   by?: string;
   mode: string;
+  explain?: boolean;
   limit: string;
   lang?: string;
   json?: boolean;
@@ -209,6 +209,7 @@ async function runNear(query: string, options: NearOptions): Promise<void> {
           routing: new ValhallaRoutingProvider(),
         }
       : {}),
+    ...(options.explain ? { explain: true } : {}),
     ...(options.lang ? { language: options.lang } : {}),
   });
 
@@ -228,11 +229,13 @@ async function runNear(query: string, options: NearOptions): Promise<void> {
 }
 
 async function runGeocode(query: string, options: GeocodeCommandOptions): Promise<void> {
-  const geocodeOptions: GeocodeOptions = { limit: parsePositiveInt(options.limit, 'limit') };
-  if (options.lang) geocodeOptions.language = options.lang;
-
-  const places = await new NominatimGeocoder().geocode(query, geocodeOptions);
-  const output = options.json ? JSON.stringify(places, null, 2) : renderGeocode(places);
+  const result = await disambiguateLocation(query, {
+    limit: parsePositiveInt(options.limit, 'limit'),
+    ...(options.lang ? { language: options.lang } : {}),
+  });
+  const output = options.json
+    ? JSON.stringify(result, null, 2)
+    : renderGeocode(result.candidates, result.ambiguous);
   process.stdout.write(`${output}\n`);
 }
 
@@ -358,6 +361,7 @@ program
   .option('--open-at <when>', 'keep only places open at an ISO time, e.g. 2026-06-20T21:00')
   .option('--by <metric>', 'rank by distance (default) or travel-time')
   .option('--mode <mode>', 'travel mode for --by travel-time: walk, bike, drive', 'walk')
+  .option('--explain', 'annotate each result with a short ranking reason')
   .option('-n, --limit <count>', 'maximum number of results', '20')
   .option('--lang <code>', 'preferred language for place names (e.g. en)')
   .option('--json', 'output raw JSON instead of a list')

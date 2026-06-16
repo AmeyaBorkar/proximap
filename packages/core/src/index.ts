@@ -20,6 +20,7 @@ export * from './ranking';
 export * from './routing';
 export * from './filters';
 export * from './origin';
+export * from './disambiguate';
 export * from './proximity';
 export * from './nearby';
 export * from './reachable';

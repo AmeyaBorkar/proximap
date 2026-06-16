@@ -40,8 +40,8 @@ commodities like routing/isochrones. Full designs live in
       — **signature/novel**: open, tunable alternative to Walk Score (`score` / `walkability_score`)
 - [x] [Amenity gap / "desert" detection](docs/proposals/08-amenity-gap-detection.md)
       — **signature/novel**: report what's _missing_ (`gaps` / `detect_amenity_gaps`)
-- [ ] [Agent-native outputs & disambiguation](docs/proposals/11-agent-native-outputs.md)
-      — schema-stable output, concise mode, ambiguity as candidates
+- [x] [Agent-native outputs & disambiguation](docs/proposals/11-agent-native-outputs.md)
+      — disambiguation, `explain`, concise mode, stable ordering (`outputSchema` pending)
 
 ### P2 — following
 

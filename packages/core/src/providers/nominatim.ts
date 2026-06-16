@@ -24,6 +24,8 @@ interface NominatimResult {
   display_name: string;
   class?: string;
   type?: string;
+  /** Nominatim's relevance heuristic in [0, 1]; not correctness — used for ambiguity. */
+  importance?: number;
   /** [south, north, west, east] as strings. */
   boundingbox?: [string, string, string, string];
 }
