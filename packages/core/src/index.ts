@@ -11,6 +11,7 @@ export const VERSION = '0.1.0';
 export * from './types';
 export * from './geo';
 export * from './categories';
+export * from './taxonomy';
 export * from './http';
 export * from './providers';
 export * from './ranking';

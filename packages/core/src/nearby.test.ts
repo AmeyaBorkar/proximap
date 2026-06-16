@@ -75,3 +75,48 @@ describe('findNearbyAmenities', () => {
     );
   });
 });
+
+const tagged: PlacesProvider = {
+  name: 'tagged',
+  async findNearby() {
+    const pois: Poi[] = [
+      {
+        id: 'node/1',
+        name: 'Bean There',
+        category: 'food',
+        kind: 'cafe',
+        location: { lat: 0, lng: 0.001 },
+        tags: { amenity: 'cafe' },
+        source: 'tagged',
+      },
+      {
+        id: 'node/2',
+        name: 'Bank X',
+        category: 'finance',
+        kind: 'bank',
+        location: { lat: 0, lng: 0.0005 },
+        tags: { amenity: 'bank' },
+        source: 'tagged',
+      },
+    ];
+    return pois;
+  },
+};
+
+describe('findNearbyAmenities — natural-language categories', () => {
+  it('resolves a term and keeps only matching POIs', async () => {
+    const { results } = await findNearbyAmenities('somewhere', {
+      geocoder,
+      places: tagged,
+      categories: ['coffee'],
+      radiusMeters: 1000,
+    });
+    expect(results.map((r) => r.id)).toEqual(['node/1']);
+  });
+
+  it('throws with suggestions on an unknown category', async () => {
+    await expect(
+      findNearbyAmenities('somewhere', { geocoder, places: tagged, categories: ['coffe'] }),
+    ).rejects.toThrow(/Unknown category.*coffee/);
+  });
+});

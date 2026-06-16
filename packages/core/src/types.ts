@@ -36,6 +36,18 @@ export const CATEGORIES = [
 /** A normalized amenity/utility category. */
 export type Category = (typeof CATEGORIES)[number];
 
+/**
+ * A single OSM tag selector, e.g. `{ key: 'amenity', value: 'cafe' }` or
+ * `{ key: 'cuisine', value: 'coffee_shop', regex: true }`. An omitted `value`
+ * matches the mere presence of the key.
+ */
+export interface CategorySelector {
+  key: string;
+  value?: string;
+  /** Treat `value` as an Overpass regular expression (the `~` operator). */
+  regex?: boolean;
+}
+
 /** A geocoded location — the resolved origin of a search. */
 export interface Place {
   /** Best-effort short name, e.g. "Eiffel Tower". */
@@ -97,8 +109,14 @@ export interface GeocodingProvider {
 export interface NearbyOptions {
   /** Search radius from the center, in metres. */
   radiusMeters: number;
-  /** Restrict results to these normalized categories. */
+  /** Restrict results to these normalized categories (post-classification). */
   categories?: Category[];
+  /**
+   * Tag selectors that drive a targeted query (and define what to keep). When
+   * set, the provider should fetch only matching features instead of the broad
+   * default set. Takes precedence over `categories` for query construction.
+   */
+  selectors?: CategorySelector[];
   /** Upper bound on POIs fetched from the provider. */
   limit?: number;
   signal?: AbortSignal;

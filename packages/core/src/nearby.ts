@@ -2,8 +2,10 @@ import { parseCoordinates } from './geo';
 import { NominatimGeocoder } from './providers/nominatim';
 import { OverpassPlacesProvider } from './providers/overpass';
 import { rankByProximity, type RankOptions } from './ranking';
+import { resolveCategories, suggestCategories, tagsMatchAnySelector } from './taxonomy';
 import type {
   Category,
+  CategorySelector,
   GeocodingProvider,
   LatLng,
   NearbyOptions,
@@ -15,8 +17,12 @@ import type {
 export interface FindNearbyOptions {
   /** Search radius in metres (default 1000). */
   radiusMeters?: number;
-  /** Restrict to these normalized categories. */
-  categories?: Category[];
+  /**
+   * Restrict to these categories. Accepts the 16 normalized category names and
+   * natural-language terms ("coffee", "pharmacy", "petrol"). Unknown terms throw
+   * with suggestions.
+   */
+  categories?: Array<Category | (string & {})>;
   /** Max results to return after ranking (default 30; <= 0 means no limit). */
   limit?: number;
   /** Preferred language for geocoding results. */
@@ -54,17 +60,39 @@ export async function findNearbyAmenities(
   const geocoder = options.geocoder ?? new NominatimGeocoder();
   const places = options.places ?? new OverpassPlacesProvider();
 
+  const selectors = resolveSelectors(options.categories);
   const origin = await resolveOrigin(query, geocoder, options);
 
   const nearbyOptions: NearbyOptions = { radiusMeters };
-  if (options.categories) nearbyOptions.categories = options.categories;
+  if (selectors.length > 0) nearbyOptions.selectors = selectors;
   if (options.signal) nearbyOptions.signal = options.signal;
-  const pois = await places.findNearby(origin.location, nearbyOptions);
+
+  const found = await places.findNearby(origin.location, nearbyOptions);
+  const pois =
+    selectors.length > 0 ? found.filter((poi) => tagsMatchAnySelector(poi.tags, selectors)) : found;
 
   const ranked = rankByProximity(origin.location, pois, { radiusMeters, ...options.rank });
   const limit = options.limit ?? DEFAULT_LIMIT;
   const results = limit > 0 ? ranked.slice(0, limit) : ranked;
   return { origin, results, total: ranked.length };
+}
+
+/** Resolve requested category terms to selectors, throwing on unknown terms. */
+function resolveSelectors(categories: FindNearbyOptions['categories']): CategorySelector[] {
+  if (!categories || categories.length === 0) return [];
+  const { selectors, unknown } = resolveCategories(categories);
+  if (unknown.length > 0) {
+    const detail = unknown
+      .map((term) => {
+        const suggestions = suggestCategories(term);
+        return suggestions.length > 0
+          ? `"${term}" (did you mean: ${suggestions.join(', ')}?)`
+          : `"${term}"`;
+      })
+      .join('; ');
+    throw new Error(`Unknown categor${unknown.length > 1 ? 'ies' : 'y'}: ${detail}`);
+  }
+  return selectors;
 }
 
 async function resolveOrigin(

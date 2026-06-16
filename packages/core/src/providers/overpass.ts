@@ -1,6 +1,7 @@
 import { categorize } from '../categories';
 import { DEFAULT_USER_AGENT, requestJson } from '../http';
-import type { LatLng, NearbyOptions, PlacesProvider, Poi } from '../types';
+import { selectorToOverpassFilter } from '../taxonomy';
+import type { CategorySelector, LatLng, NearbyOptions, PlacesProvider, Poi } from '../types';
 
 export interface OverpassOptions {
   /** Overpass interpreter endpoint URL. */
@@ -45,6 +46,19 @@ export function buildOverpassQuery(center: LatLng, radiusMeters: number): string
   return `[out:json][timeout:25];\n(\n${body}\n);\nout center tags;`;
 }
 
+/** Build an Overpass query that fetches only features matching `selectors`. */
+export function buildTargetedOverpassQuery(
+  center: LatLng,
+  radiusMeters: number,
+  selectors: CategorySelector[],
+): string {
+  const around = `around:${Math.max(1, Math.round(radiusMeters))},${center.lat},${center.lng}`;
+  const body = selectors
+    .map((selector) => `  nwr${selectorToOverpassFilter(selector)}(${around});`)
+    .join('\n');
+  return `[out:json][timeout:25];\n(\n${body}\n);\nout center tags;`;
+}
+
 function coordOf(lat: number | undefined, lon: number | undefined): LatLng | null {
   if (
     typeof lat === 'number' &&
@@ -75,7 +89,10 @@ export class OverpassPlacesProvider implements PlacesProvider {
   }
 
   async findNearby(center: LatLng, options: NearbyOptions): Promise<Poi[]> {
-    const query = buildOverpassQuery(center, options.radiusMeters);
+    const query =
+      options.selectors && options.selectors.length > 0
+        ? buildTargetedOverpassQuery(center, options.radiusMeters, options.selectors)
+        : buildOverpassQuery(center, options.radiusMeters);
     const data = await requestJson<OverpassResponse>(this.endpoint, {
       method: 'POST',
       headers: {
