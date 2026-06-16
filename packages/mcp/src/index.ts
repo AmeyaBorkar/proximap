@@ -1,3 +1,87 @@
-// proximap MCP server entrypoint. Tools are registered as features land.
-// MCP servers speak JSON-RPC over stdio, so diagnostics go to stderr.
-console.error('proximap MCP server — tools are wired up as features land.');
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CATEGORIES, findNearbyAmenities, NominatimGeocoder } from '@proximap/core';
+import { z } from 'zod';
+import { toGeocodePayload, toNearbyPayload } from './payload';
+
+const VERSION = '0.1.0';
+
+function jsonResult(data: unknown) {
+  return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+}
+
+function errorResult(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return { content: [{ type: 'text' as const, text: `Error: ${message}` }], isError: true };
+}
+
+const server = new McpServer({ name: 'proximap', version: VERSION });
+
+server.registerTool(
+  'find_nearby_amenities',
+  {
+    title: 'Find nearby amenities',
+    description:
+      'Find amenities, utilities, and points of interest near a place, ranked by distance. ' +
+      'Accepts a place name, an address, or a "lat,lng" string. Powered by OpenStreetMap.',
+    inputSchema: {
+      query: z.string().describe('Place name, address, or "lat,lng" coordinates'),
+      radiusMeters: z
+        .number()
+        .positive()
+        .optional()
+        .describe('Search radius in metres (default 1000)'),
+      categories: z.array(z.enum(CATEGORIES)).optional().describe('Restrict to these categories'),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Maximum number of results (default 30)'),
+      language: z.string().optional().describe('Preferred language for names, e.g. "en"'),
+    },
+  },
+  async ({ query, radiusMeters, categories, limit, language }) => {
+    try {
+      const result = await findNearbyAmenities(query, {
+        ...(radiusMeters ? { radiusMeters } : {}),
+        ...(categories ? { categories } : {}),
+        ...(limit ? { limit } : {}),
+        ...(language ? { language } : {}),
+      });
+      return jsonResult(toNearbyPayload(result));
+    } catch (error) {
+      return errorResult(error);
+    }
+  },
+);
+
+server.registerTool(
+  'geocode',
+  {
+    title: 'Geocode a place',
+    description:
+      'Resolve a place name or address to coordinates using OpenStreetMap. ' +
+      'Returns ranked candidates with their full display names.',
+    inputSchema: {
+      query: z.string().describe('Place name or address to look up'),
+      limit: z.number().int().positive().optional().describe('Maximum candidates (default 5)'),
+      language: z.string().optional().describe('Preferred language, e.g. "en"'),
+    },
+  },
+  async ({ query, limit, language }) => {
+    try {
+      const places = await new NominatimGeocoder().geocode(query, {
+        limit: limit ?? 5,
+        ...(language ? { language } : {}),
+      });
+      return jsonResult(toGeocodePayload(places));
+    } catch (error) {
+      return errorResult(error);
+    }
+  },
+);
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
+process.stderr.write(`proximap MCP server ${VERSION} ready (stdio)\n`);
