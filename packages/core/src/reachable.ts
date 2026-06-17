@@ -130,7 +130,11 @@ export async function reachableAmenities(
     const ranked: RankedPoi = {
       ...entry.poi,
       distanceMeters: haversineMeters(origin.location, entry.poi.location),
-      score: entry.metric ? Math.round((1 - entry.metric.seconds / budgetSeconds) * 100) / 100 : 0,
+      // Clamp to [0, 1]: an isochrone can enclose a POI whose matrix travel
+      // time still exceeds the budget, which would otherwise score negative.
+      score: entry.metric
+        ? Math.max(0, Math.round((1 - entry.metric.seconds / budgetSeconds) * 100) / 100)
+        : 0,
       rank: index + 1,
     };
     if (entry.metric) {

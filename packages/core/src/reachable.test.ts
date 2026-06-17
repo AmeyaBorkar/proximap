@@ -83,6 +83,34 @@ describe('reachableAmenities', () => {
     expect(result.results.map((r) => r.id)).toEqual(['node/a']);
   });
 
+  it('clamps score to [0, 1] for isochrone members beyond the time budget', async () => {
+    // A large isochrone keeps node/b, but the matrix says it takes 999 s — well
+    // over the 600 s budget. Score must not go negative (documented [0, 1]).
+    const bigBox: PolygonRing = [
+      [-0.02, -0.02],
+      [0.02, -0.02],
+      [0.02, 0.02],
+      [-0.02, 0.02],
+      [-0.02, -0.02],
+    ];
+    const slowMatrix = async (_origin: LatLng, targets: readonly LatLng[]) =>
+      targets.map(() => ({ meters: 1113, seconds: 999 }));
+    const routing: RoutingProvider = {
+      name: 'iso',
+      matrix: slowMatrix,
+      async isochrone() {
+        return bigBox;
+      },
+    };
+
+    const result = await reachableAmenities('here', { within: 10, geocoder, places, routing });
+    expect(result.results.length).toBeGreaterThan(0);
+    for (const poi of result.results) {
+      expect(poi.score).toBeGreaterThanOrEqual(0);
+      expect(poi.score).toBeLessThanOrEqual(1);
+    }
+  });
+
   it('requires a positive time budget', async () => {
     await expect(reachableAmenities('here', { within: 0, geocoder, places })).rejects.toThrow(
       /positive/,
