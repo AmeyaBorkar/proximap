@@ -105,6 +105,14 @@ describe('isOpenAt — public holidays', () => {
     const oh = 'Mo-Su 10:00-20:00; PH off';
     expect(isOpenAt(oh, mon(11)).state).toBe('open');
   });
+
+  it('returns unknown for holiday-only strings (no regular schedule to justify)', () => {
+    // PH/SH rules are skipped (no holiday calendar); with nothing else, there is
+    // no schedule we can justify a state from — must be unknown, not closed.
+    expect(isOpenAt('PH off', mon(12)).state).toBe('unknown');
+    expect(isOpenAt('SH closed', mon(12)).state).toBe('unknown');
+    expect(isOpenAt('PH 09:00-12:00', mon(12)).state).toBe('unknown');
+  });
 });
 
 describe('isOpenAt — unknown / unsupported', () => {

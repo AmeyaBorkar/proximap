@@ -64,6 +64,7 @@ function buildSegments(input: string): Segments | null {
   // Each day's own intervals, last matching rule wins (OSM `;` override).
   const own: (Interval[] | undefined)[] = new Array(7).fill(undefined);
 
+  let applied = false;
   for (const rulePart of input.split(';')) {
     const rule = rulePart.trim();
     if (!rule) continue;
@@ -71,7 +72,12 @@ function buildSegments(input: string): Segments | null {
     if (parsed === 'unknown') return null;
     if (parsed === null) continue; // holiday-only rule: skip
     for (const day of parsed.days) own[day] = parsed.intervals;
+    applied = true;
   }
+
+  // Only holiday rules (or nothing) contributed a schedule: there is no regular
+  // schedule to justify open/closed, so report `unknown` rather than `closed`.
+  if (!applied) return null;
 
   // Expand into per-day segments, spilling overnight ranges into the next day.
   const segments: Segments = Array.from({ length: 7 }, () => [] as Interval[]);
