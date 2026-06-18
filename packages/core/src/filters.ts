@@ -108,7 +108,8 @@ const clamp01 = (n: number): number => Math.min(1, Math.max(0, n));
  */
 export function accessibleScorer(): (input: ScoreInput) => number {
   return ({ poi, distanceMeters, radiusMeters }) => {
-    const proximity = 1 - clamp01(distanceMeters / radiusMeters);
+    // Guard the divisor: a radiusMeters of 0 with a POI at the origin is 0/0 = NaN.
+    const proximity = 1 - clamp01(distanceMeters / Math.max(radiusMeters, 1));
     const wheelchair = (poi.tags.wheelchair ?? '').toLowerCase();
     const tierBase = wheelchair === 'yes' ? 0.66 : wheelchair === 'limited' ? 0.33 : 0;
     return tierBase + proximity * 0.33;

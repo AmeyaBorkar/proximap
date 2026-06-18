@@ -44,4 +44,10 @@ describe('rankByProximity', () => {
     ]);
     expect(reversed.map((r) => r.id)).toEqual(['alpha', 'zebra']); // same regardless of input order
   });
+
+  it('does not produce NaN scores when radiusMeters is 0', () => {
+    // A caller-supplied radiusMeters: 0 with a POI at the origin must not yield 0/0.
+    const ranked = rankByProximity(origin, [poi('here', 0, 'food')], { radiusMeters: 0 });
+    expect(Number.isNaN(ranked[0]!.score)).toBe(false);
+  });
 });

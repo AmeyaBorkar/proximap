@@ -22,7 +22,8 @@ const clamp01 = (n: number): number => Math.min(1, Math.max(0, n));
 
 function defaultScorer(weights?: Partial<Record<Category, number>>): (input: ScoreInput) => number {
   return ({ poi, distanceMeters, radiusMeters }) => {
-    const proximity = 1 - clamp01(distanceMeters / radiusMeters);
+    // Guard the divisor: a radiusMeters of 0 with a POI at the origin is 0/0 = NaN.
+    const proximity = 1 - clamp01(distanceMeters / Math.max(radiusMeters, 1));
     const completeness = poi.name ? 0.05 : 0;
     const weight = weights?.[poi.category] ?? 1;
     return (proximity + completeness) * weight;

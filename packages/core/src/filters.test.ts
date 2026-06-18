@@ -81,4 +81,10 @@ describe('accessibleScorer', () => {
     const far = score({ poi: poi('yes'), distanceMeters: 800, radiusMeters: 1000 });
     expect(near).toBeGreaterThan(far);
   });
+
+  it('does not produce NaN when radiusMeters is 0', () => {
+    expect(Number.isNaN(score({ poi: poi('yes'), distanceMeters: 0, radiusMeters: 0 }))).toBe(
+      false,
+    );
+  });
 });
