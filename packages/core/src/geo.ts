@@ -24,7 +24,8 @@ export function haversineMeters(a: LatLng, b: LatLng): number {
 /** Format a metre distance as a compact human string ("125 m", "1.4 km"). */
 export function formatDistance(meters: number): string {
   if (!Number.isFinite(meters) || meters < 0) return '—';
-  if (meters < 1000) return `${Math.round(meters)} m`;
+  // Branch on the rounded value so e.g. 999.5 m renders as "1.0 km", not "1000 m".
+  if (Math.round(meters) < 1000) return `${Math.round(meters)} m`;
   const km = meters / 1000;
   return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
 }

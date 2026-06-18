@@ -32,6 +32,12 @@ describe('formatDistance', () => {
     expect(formatDistance(15_000)).toBe('15 km');
   });
 
+  it('rounds into kilometres at the 1 km boundary (not "1000 m")', () => {
+    expect(formatDistance(999.5)).toBe('1.0 km');
+    expect(formatDistance(999)).toBe('999 m');
+    expect(formatDistance(1000)).toBe('1.0 km');
+  });
+
   it('renders invalid input as an em dash', () => {
     expect(formatDistance(-1)).toBe('—');
     expect(formatDistance(Number.NaN)).toBe('—');
