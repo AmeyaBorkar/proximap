@@ -112,6 +112,8 @@ export function accessibleScorer(): (input: ScoreInput) => number {
     const proximity = 1 - clamp01(distanceMeters / Math.max(radiusMeters, 1));
     const wheelchair = (poi.tags.wheelchair ?? '').toLowerCase();
     const tierBase = wheelchair === 'yes' ? 0.66 : wheelchair === 'limited' ? 0.33 : 0;
-    return tierBase + proximity * 0.33;
+    // Span 0.32 (< the 0.33 tier gap) keeps the bands strictly separated, so a
+    // step-free POI at the radius edge still outranks a `limited` one at the origin.
+    return tierBase + proximity * 0.32;
   };
 }

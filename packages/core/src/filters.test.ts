@@ -82,6 +82,13 @@ describe('accessibleScorer', () => {
     expect(near).toBeGreaterThan(far);
   });
 
+  it('a step-free POI at the radius edge strictly outranks limited at the origin', () => {
+    // Documented guarantee: the tiers must not merely tie at the band boundary.
+    const yesAtEdge = score({ poi: poi('yes'), distanceMeters: 1000, radiusMeters: 1000 });
+    const limitedAtOrigin = score({ poi: poi('limited'), distanceMeters: 0, radiusMeters: 1000 });
+    expect(yesAtEdge).toBeGreaterThan(limitedAtOrigin);
+  });
+
   it('does not produce NaN when radiusMeters is 0', () => {
     expect(Number.isNaN(score({ poi: poi('yes'), distanceMeters: 0, radiusMeters: 0 }))).toBe(
       false,
