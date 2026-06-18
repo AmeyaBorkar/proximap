@@ -128,8 +128,13 @@ export function renderGeocode(places: Place[], ambiguous = false): string {
   const rankWidth = String(places.length).length;
   const lines: string[] = [];
   if (ambiguous) {
+    // Ambiguity means at least two genuinely distinct rivals exist among the
+    // candidates — not that every candidate is distinct, so label the count
+    // "candidates" rather than overstating "N distinct places".
     lines.push(
-      pc.yellow(`⚠ Ambiguous — ${places.length} distinct places match this name; pick one:`),
+      pc.yellow(
+        `⚠ Ambiguous — distinct places share this name; showing ${places.length} candidates, pick one:`,
+      ),
       '',
     );
   }

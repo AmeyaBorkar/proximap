@@ -71,6 +71,34 @@ describe('renderGeocode', () => {
   it('reports when there are no matches', () => {
     expect(renderGeocode([])).toBe('No matches found.');
   });
+
+  it('does not overstate the count of distinct places in the ambiguity banner', () => {
+    // 3 candidates, but only 2 are genuinely distinct rivals — the banner must
+    // not claim "3 distinct places" (the full candidate count).
+    const places: Place[] = [
+      {
+        name: 'Springfield',
+        displayName: 'Springfield, IL',
+        location: { lat: 39.8, lng: -89.6 },
+        source: 'test',
+      },
+      {
+        name: 'Springfield',
+        displayName: 'Springfield, MO',
+        location: { lat: 37.2, lng: -93.3 },
+        source: 'test',
+      },
+      {
+        name: 'Springfield',
+        displayName: 'Springfield (variant)',
+        location: { lat: 39.81, lng: -89.61 },
+        source: 'test',
+      },
+    ];
+    const out = renderGeocode(places, true);
+    expect(out).toContain('Ambiguous');
+    expect(out).not.toMatch(/\d+ distinct/);
+  });
 });
 
 describe('renderGaps', () => {
