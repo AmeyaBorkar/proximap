@@ -4,6 +4,29 @@ All notable changes to proximap are documented here. The project follows
 [Semantic Versioning](https://semver.org): the published packages
 (`@proximap/core`, `@proximap/cli`, `@proximap/mcp`) share one version.
 
+## 1.0.1 — 2026-06-18
+
+Patch release: correctness fixes from a multi-agent audit sweep (each verified
+with a regression test). No API changes.
+
+### Fixed
+
+- **reachable:** `reachableAmenities` clamps each result's `score` to `[0, 1]` —
+  a road-network isochrone can enclose a POI whose matrix travel time exceeds
+  the budget, which previously produced a negative score.
+- **hours:** holiday-only `opening_hours` (e.g. `PH off`, `SH closed`) now
+  evaluate to `unknown` instead of `closed` — there is no regular schedule to
+  justify a state.
+- **ranking / filters:** both proximity scorers guard against `radiusMeters: 0`
+  (a POI at the origin previously yielded a `NaN` score that corrupted the sort).
+- **filters:** accessibility tier bands are now strictly separated, so a
+  step-free POI at the search-radius edge always outranks a `limited` one at the
+  origin (they previously tied at the boundary).
+- **geo:** `formatDistance` rounds into kilometres at the 1 km boundary
+  (`999.5 m` → `"1.0 km"`, not `"1000 m"`).
+- **cli:** the geocode ambiguity banner no longer overstates the number of
+  "distinct places" (it labels the count as candidates).
+
 ## 1.0.0 — 2026-06-16
 
 First stable release. Everything below is implemented and verified against live

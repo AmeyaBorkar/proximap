@@ -1,6 +1,6 @@
 {
   "name": "@proximap/mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Model Context Protocol server for proximap — geospatial tools for AI agents and Claude.",
   "keywords": [
     "mcp",
@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@proximap/core": "^1.0.0",
+    "@proximap/core": "^1.0.1",
     "zod": "^4.4.3"
   }
 }

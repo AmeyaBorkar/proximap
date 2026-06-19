@@ -1,6 +1,6 @@
 {
   "name": "@proximap/core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Core geospatial engine for proximap: geocoding, nearby places, and ranking. OpenStreetMap by default, pluggable providers.",
   "keywords": [
     "geocoding",
